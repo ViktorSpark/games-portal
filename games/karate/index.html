@@ -763,6 +763,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
 
   function physics(f) {
     if (f.state === 'ko') return;
+    f.stateT += 16;
     if (f.invuln > 0) f.invuln -= 16;
     if (f.hurtFlash > 0) f.hurtFlash -= 16;
     if (f.comboT > 0) { f.comboT -= 16; if (f.comboT <= 0) f.combo = 0; }
@@ -1895,8 +1896,12 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     get cups() { return honor.cups; },
     get beaten() { return Object.keys(honor.beaten).length; },
     get fighterStates() { return fight ? [fight.player.state, fight.opp.state] : []; },
+    get fighterHp() { return fight ? [fight.player.hp, fight.opp.hp] : []; },
     setHp(pHp, oHp) {
       if (fight) { fight.player.hp = pHp; fight.opp.hp = oHp; }
+    },
+    setPos(pX, oX) {
+      if (fight) { fight.player.x = pX; fight.opp.x = oX; }
     },
     forceRoundEnd(playerWon) { if (fight && fight.state === 'fight') endRound(playerWon); },
     simulateFrames(n) {
