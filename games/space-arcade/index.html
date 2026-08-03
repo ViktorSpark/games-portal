@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Космическая аркада | Финал с салютом и маршем</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'Inter', Tahoma, Geneva, Verdana, sans-serif;
+      background: #000010;
+      cursor: none;
+    }
+    
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    #weapon-panel {
+      position: absolute;
+      top: 50%;
+      left: 15px;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 20, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 15px 18px;
+      color: #ffffff;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 140px;
+    }
+    
+    .weapon-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .weapon-item.active { background: rgba(100, 150, 255, 0.2); border: 1px solid rgba(100, 150, 255, 0.4); }
+    .weapon-icon { font-size: 20px; width: 28px; text-align: center; }
+    .weapon-name { font-weight: 600; font-size: 12px; color: #aaccff; }
+    .weapon-level { font-size: 10px; color: #88aacc; }
+    
+    #coins-panel {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #ffd700;
+      font-size: 20px;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 18px;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+    
+    #score-panel {
+      position: absolute;
+      top: 20px;
+      left: 180px;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px 20px;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    #score-progress {
+      position: absolute;
+      top: 75px;
+      left: 180px;
+      width: 200px;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    #score-progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ffaa00, #ffdd44);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    
+    #high-score {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #ffd966;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 12px;
+      border-radius: 10px;
+    }
+    
+    #health-bar-container {
+      position: absolute;
+      top: 95px;
+      left: 180px;
+      width: 180px;
+      height: 16px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      overflow: hidden;
+    }
+    #health-bar {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #44ff66, #66ff88);
+      border-radius: 6px;
+      transition: width 0.3s ease;
+    }
+    #health-text {
+      position: absolute;
+      top: 95px;
+      left: 370px;
+      color: #ffffff;
+      font-size: 14px;
+    }
+    
+    #rocket-count {
+      position: absolute;
+      top: 125px;
+      left: 180px;
+      color: #ffaa00;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 6px 14px;
+      border-radius: 15px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 170, 0, 0.3);
+    }
+    
+    #level-panel {
+      position: absolute;
+      top: 125px;
+      right: 20px;
+      color: #44ffaa;
+      font-size: 16px;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 18px;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(68, 255, 170, 0.3);
+    }
+    
+    #armada-wave-panel {
+      position: absolute;
+      top: 165px;
+      right: 20px;
+      color: #ff4444;
+      font-size: 14px;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 6px 14px;
+      border-radius: 12px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 68, 68, 0.4);
+      display: none;
+      animation: pulse-lock 1s infinite;
+    }
+    @keyframes pulse-lock {
+      0%, 100% { box-shadow: 0 0 10px rgba(255, 68, 68, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(255, 68, 68, 0.8); }
+    }
+    
+    #laser-power {
+      position: absolute;
+      top: 195px;
+      right: 20px;
+      color: #88ccff;
+      font-size: 13px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 5px 12px;
+      border-radius: 12px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(136, 204, 255, 0.3);
+    }
+    
+    #combo-bonus {
+      position: absolute;
+      top: 225px;
+      right: 20px;
+      color: #ffaa00;
+      font-size: 13px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 6px 14px;
+      border-radius: 12px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 170, 0, 0.3);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    #lock-indicator {
+      position: absolute;
+      top: 255px;
+      right: 20px;
+      color: #ff4444;
+      font-size: 14px;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 6px 14px;
+      border-radius: 12px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 68, 68, 0.4);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #lock-indicator.locked { opacity: 1; animation: pulse-lock 1s infinite; }
+    
+    #message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ffffff;
+      font-size: 42px;
+      font-weight: 900;
+      text-align: center;
+      text-shadow: 0 0 40px rgba(100, 150, 255, 0.9);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 25;
+    }
+    #message.visible { opacity: 1; }
+    
+    #combo-text {
+      position: absolute;
+      top: 35%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ffaa00;
+      font-size: 32px;
+      font-weight: 800;
+      text-shadow: 0 0 30px rgba(255, 170, 0, 0.8);
+      opacity: 0;
+      transition: all 0.4s ease;
+      pointer-events: none;
+      z-index: 25;
+    }
+    #combo-text.show { opacity: 1; transform: translate(-50%, -60%); }
+    
+    #cool-comment {
+      position: absolute;
+      top: 25%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      font-weight: 900;
+      pointer-events: none;
+      z-index: 26;
+      opacity: 0;
+      transition: all 0.5s ease;
+      text-shadow: 0 0 30px rgba(255, 255, 0, 0.8);
+    }
+    #cool-comment.show { opacity: 1; transform: translate(-50%, -50%) scale(1.2); animation: cool-pop 0.8s ease-out; }
+    @keyframes cool-pop {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+      50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+    
+    #screen-flash {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      pointer-events: none;
+      z-index: 24;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+    }
+    
+    #dynamic-crosshair {
+      position: absolute;
+      pointer-events: none;
+      z-index: 20;
+      transform: translate(-50%, -50%);
+      transition: left 0.08s linear, top 0.08s linear;
+    }
+    
+    .crosshair-ring {
+      position: absolute;
+      width: 55px;
+      height: 55px;
+      border: 2px solid rgba(0, 255, 255, 0.4);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.2), inset 0 0 15px rgba(0, 255, 255, 0.08);
+      transition: all 0.3s ease;
+    }
+    .crosshair-ring.locked { border-color: rgba(255, 68, 68, 0.8); box-shadow: 0 0 25px rgba(255, 68, 68, 0.5); width: 50px; height: 50px; }
+    
+    .crosshair-line {
+      position: absolute;
+      background: rgba(0, 255, 255, 0.6);
+      box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+      transition: all 0.3s ease;
+    }
+    .crosshair-line.locked { background: rgba(255, 68, 68, 0.8); box-shadow: 0 0 12px rgba(255, 68, 68, 0.6); }
+    .crosshair-line.top { width: 2px; height: 14px; top: 3px; left: 50%; transform: translateX(-50%); }
+    .crosshair-line.bottom { width: 2px; height: 14px; bottom: 3px; left: 50%; transform: translateX(-50%); }
+    .crosshair-line.left { width: 14px; height: 2px; left: 3px; top: 50%; transform: translateY(-50%); }
+    .crosshair-line.right { width: 14px; height: 2px; right: 3px; top: 50%; transform: translateY(-50%); }
+    
+    .crosshair-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: rgba(0, 255, 255, 0.9);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+      transition: all 0.3s ease;
+    }
+    .crosshair-dot.locked { background: rgba(255, 68, 68, 0.9); box-shadow: 0 0 25px rgba(255, 68, 68, 0.9); width: 8px; height: 8px; }
+    
+    #target-highlight {
+      position: absolute;
+      pointer-events: none;
+      z-index: 19;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    
+    .highlight-ring {
+      width: 40px;
+      height: 40px;
+      border: 2px solid rgba(255, 100, 100, 0.7);
+      border-radius: 50%;
+      animation: rotate-ring 2s linear infinite;
+      box-shadow: 0 0 15px rgba(255, 100, 100, 0.5);
+    }
+    @keyframes rotate-ring { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .highlight-diamond {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      background: rgba(255, 100, 100, 0.6);
+      transform: rotate(45deg);
+      top: 50%;
+      left: 50%;
+      margin-left: -7.5px;
+      margin-top: -7.5px;
+      box-shadow: 0 0 10px rgba(255, 100, 100, 0.4);
+    }
+    
+    #pause-menu {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 20, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      pointer-events: all;
+    }
+    #pause-menu.visible { display: flex; }
+    #pause-menu h2 { color: #ffffff; font-size: 36px; margin-bottom: 30px; }
+    #controls-info { color: #ccddee; font-size: 16px; text-align: left; background: rgba(0, 0, 30, 0.7); padding: 25px 35px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2); line-height: 2; margin-bottom: 25px; }
+    #controls-info .key { display: inline-block; background: rgba(100, 150, 255, 0.3); border: 1px solid rgba(100, 150, 255, 0.5); padding: 2px 10px; border-radius: 6px; font-weight: 700; color: #ffffff; margin: 0 4px; }
+    #resume-btn { padding: 14px 40px; font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #44ff66, #22cc44); color: white; border: none; border-radius: 12px; cursor: pointer; }
+    
+    .instruction {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 12px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 6px 16px;
+      border-radius: 15px;
+      backdrop-filter: blur(5px);
+    }
+    
+    #name-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 20, 0.9);
+      z-index: 30;
+      pointer-events: all;
+      backdrop-filter: blur(10px);
+    }
+    #name-screen.hidden { display: none; }
+    #name-screen h1 { color: #ffffff; font-size: 36px; margin-bottom: 10px; }
+    #name-screen p { color: #aaccff; margin-bottom: 20px; font-size: 16px; }
+    #player-name-input { padding: 12px 20px; font-size: 18px; border-radius: 10px; border: 2px solid rgba(100, 150, 255, 0.5); background: rgba(0, 0, 30, 0.8); color: #ffffff; outline: none; width: 250px; text-align: center; margin-bottom: 20px; }
+    .name-buttons { display: flex; gap: 15px; }
+    #start-game-btn { padding: 12px 35px; font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #4488ff, #2266cc); color: white; border: none; border-radius: 10px; cursor: pointer; }
+    #open-dev-btn { padding: 12px 25px; font-size: 16px; font-weight: 600; background: rgba(255, 136, 68, 0.3); color: #ff8844; border: 1px solid rgba(255, 136, 68, 0.5); border-radius: 10px; cursor: pointer; }
+    
+    #dev-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 20, 0.97);
+      z-index: 35;
+      pointer-events: all;
+      backdrop-filter: blur(10px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #dev-screen.visible { display: flex; }
+    #dev-screen h1 { color: #ff8844; font-size: 26px; margin: 5px 0; }
+    
+    .dev-section {
+      background: rgba(0, 0, 30, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin: 5px 0;
+      width: 100%;
+      max-width: 550px;
+    }
+    .dev-section.collapsed .dev-content { display: none; }
+    .dev-section .dev-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      color: #ffaa44;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 5px 0;
+    }
+    .dev-section.collapsed .dev-header .arrow { transform: rotate(-90deg); }
+    
+    .dev-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      color: #ccddee;
+      font-size: 13px;
+    }
+    .dev-row label { color: #aaccff; flex: 1; font-size: 12px; }
+    .dev-row input {
+      width: 90px;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid rgba(100, 150, 255, 0.4);
+      background: rgba(0, 0, 20, 0.8);
+      color: #ffffff;
+      font-size: 13px;
+      text-align: center;
+      font-family: inherit;
+    }
+    .dev-row .hint { font-size: 10px; color: #6688aa; }
+    
+    .dev-buttons { display: flex; gap: 12px; margin: 12px 0; flex-wrap: wrap; justify-content: center; }
+    #apply-dev-btn { padding: 12px 35px; font-size: 16px; font-weight: 700; background: linear-gradient(135deg, #44ff66, #22cc44); color: #000; border: none; border-radius: 10px; cursor: pointer; }
+    #reset-dev-btn { padding: 12px 25px; font-size: 14px; font-weight: 600; background: rgba(255, 255, 255, 0.1); color: #ccddee; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; cursor: pointer; }
+    #close-dev-btn { padding: 12px 25px; font-size: 14px; font-weight: 600; background: rgba(255, 68, 68, 0.2); color: #ff8888; border: 1px solid rgba(255, 68, 68, 0.4); border-radius: 10px; cursor: pointer; }
+    
+    #password-section {
+      background: rgba(255, 68, 68, 0.1);
+      border: 1px solid rgba(255, 68, 68, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px 0;
+      text-align: center;
+      max-width: 400px;
+    }
+    #password-section h3 { color: #ff8888; }
+    #password-input { padding: 8px 15px; font-size: 16px; border-radius: 8px; border: 2px solid rgba(255, 68, 68, 0.5); background: rgba(0, 0, 20, 0.8); color: #ffffff; text-align: center; width: 120px; letter-spacing: 4px; }
+    #unlock-btn { padding: 8px 20px; margin-left: 10px; font-size: 14px; font-weight: 600; background: rgba(255, 68, 68, 0.3); color: #ff8888; border: 1px solid rgba(255, 68, 68, 0.5); border-radius: 8px; cursor: pointer; }
+    .password-error { color: #ff4444; font-size: 12px; margin-top: 5px; display: none; }
+    
+    #final-victory-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 20, 0.92);
+      backdrop-filter: blur(10px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 35;
+      pointer-events: all;
+    }
+    #final-victory-screen.visible { display: flex; }
+    #final-victory-screen h1 {
+      color: #ffd700;
+      font-size: 52px;
+      font-weight: 900;
+      text-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+      margin-bottom: 10px;
+      animation: victory-glow 2s infinite;
+    }
+    @keyframes victory-glow {
+      0%, 100% { text-shadow: 0 0 40px rgba(255, 215, 0, 0.8); }
+      50% { text-shadow: 0 0 80px rgba(255, 215, 0, 1), 0 0 120px rgba(255, 100, 0, 0.6); }
+    }
+    #final-victory-screen .cup { font-size: 100px; animation: cup-bounce 1s infinite; }
+    @keyframes cup-bounce { 0%,100%{transform:translateY(0)} 25%{transform:translateY(-20px)} 75%{transform:translateY(-20px)} }
+    #final-victory-screen .stats { color: #ffffff; font-size: 22px; margin: 20px 0; text-align: center; line-height: 2; }
+    #final-victory-screen .stats span { color: #ffd700; font-weight: 700; }
+    #final-victory-screen button {
+      padding: 14px 40px;
+      font-size: 18px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin: 10px;
+      transition: all 0.3s;
+    }
+    #final-victory-screen button:hover { transform: scale(1.05); }
+    #final-victory-screen .new-game-btn { background: linear-gradient(135deg, #44ff66, #22cc44); color: #000; }
+    #final-victory-screen .next-level-btn { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000; }
+    
+    @media (max-width: 700px) {
+      #weapon-panel { left: 5px; padding: 8px 10px; gap: 6px; min-width: 100px; }
+      #score-panel { left: 110px; font-size: 14px; }
+      #final-victory-screen h1 { font-size: 32px; }
+      #final-victory-screen .cup { font-size: 70px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="name-screen">
+    <h1>🚀 КОСМИЧЕСКАЯ АРКАДА</h1>
+    <p>Введите ваше имя, капитан</p>
+    <input type="text" id="player-name-input" placeholder="Имя игрока" maxlength="15" autofocus>
+    <div class="name-buttons">
+      <button id="start-game-btn">СТАРТ</button>
+      <button id="open-dev-btn">🛠️ НАСТРОЙКИ</button>
+    </div>
+  </div>
+  
+  <div id="dev-screen">
+    <h1>🛠️ ПАНЕЛЬ РАЗРАБОТЧИКА</h1>
+    <div id="password-section">
+      <h3>🔐 Пароль: 1234</h3>
+      <input type="password" id="password-input" placeholder="****" maxlength="8">
+      <button id="unlock-btn">РАЗБЛОКИРОВАТЬ</button>
+      <div class="password-error" id="password-error">❌ Неверный пароль!</div>
+    </div>
+    <div id="dev-settings" style="display:none; width:100%; max-width:550px;">
+      <div class="dev-section">
+        <div class="dev-header" onclick="this.parentElement.classList.toggle('collapsed')">🎵 Аудио <span class="arrow">▼</span></div>
+        <div class="dev-content">
+          <div class="dev-row"><label>Трек 1:</label><input type="text" id="dev-track1" value="gameplay1.mp3" style="width:180px;"></div>
+          <div class="dev-row"><label>Трек 2:</label><input type="text" id="dev-track2" value="gameplay2.mp3" style="width:180px;"></div>
+          <div class="dev-row"><label>Трек 3:</label><input type="text" id="dev-track3" value="gameplay3.mp3" style="width:180px;"></div>
+          <div class="dev-row"><label>Меню:</label><input type="text" id="dev-menu-music" value="menu.mp3" style="width:180px;"></div>
+          <div class="dev-row"><label>Армада:</label><input type="text" id="dev-armada-music" value="armada.mp3" style="width:180px;"></div>
+          <div class="dev-row"><label>Сирена:</label><input type="text" id="dev-siren-sound" value="sirena.mp3" style="width:180px;"></div>
+          <div class="dev-row"><label>Победа:</label><input type="text" id="dev-victory-music" value="victory.mp3" style="width:180px;"></div>
+          <div class="dev-row"><label>Громкость:</label><input type="range" id="dev-music-volume" min="0" max="100" value="35" style="width:120px;"><span id="vol-label">35%</span></div>
+        </div>
+      </div>
+      <div class="dev-section">
+        <div class="dev-header" onclick="this.parentElement.classList.toggle('collapsed')">📊 Уровни и очки <span class="arrow">▼</span></div>
+        <div class="dev-content">
+          <div class="dev-row"><label>Базовые очки:</label><input type="number" id="dev-base-points" value="50" min="10" max="5000"></div>
+          <div class="dev-row"><label>Добавка за уровень:</label><input type="number" id="dev-points-inc" value="30" min="0" max="2000"></div>
+        </div>
+      </div>
+      <div class="dev-section">
+        <div class="dev-header" onclick="this.parentElement.classList.toggle('collapsed')">👾 Платоновые тела <span class="arrow">▼</span></div>
+        <div class="dev-content">
+          <div class="dev-row"><label>Макс. врагов:</label><input type="number" id="dev-max-enemies" value="18" min="5" max="80"></div>
+          <div class="dev-row"><label>Добавка за уровень:</label><input type="number" id="dev-enemies-per-lvl" value="5" min="0" max="20"></div>
+          <div class="dev-row"><label>Интервал спавна (мс):</label><input type="number" id="dev-spawn-interval" value="1500" min="200" max="5000"></div>
+          <div class="dev-row"><label>Уменьшение интервала:</label><input type="number" id="dev-spawn-decrease" value="80" min="0" max="300"></div>
+          <div class="dev-row"><label>Скорость:</label><input type="number" id="dev-enemy-speed" value="0.03" min="0.01" max="0.2" step="0.005"></div>
+        </div>
+      </div>
+      <div class="dev-section">
+        <div class="dev-header" onclick="this.parentElement.classList.toggle('collapsed')">🚀 Стреляющие корабли <span class="arrow">▼</span></div>
+        <div class="dev-content">
+          <div class="dev-row"><label>С уровня:</label><input type="number" id="dev-ships-level" value="3" min="1" max="20"></div>
+          <div class="dev-row"><label>Макс. кораблей:</label><input type="number" id="dev-max-ships" value="3" min="0" max="10"></div>
+          <div class="dev-row"><label>Шанс появления:</label><input type="number" id="dev-ship-chance" value="0.005" min="0.001" max="0.05" step="0.001"></div>
+        </div>
+      </div>
+      <div class="dev-section">
+        <div class="dev-header" onclick="this.parentElement.classList.toggle('collapsed')">⚔️ Волны Армады <span class="arrow">▼</span></div>
+        <div class="dev-content">
+          <div class="dev-row"><label>Уровни армад:</label><input type="text" id="dev-armada-levels" value="5,7,10,15" style="width:120px;"></div>
+          <div class="dev-row"><label>Кораблей:</label><input type="text" id="dev-armada-ships-count" value="15|25|30|40" style="width:120px;"></div>
+          <div class="dev-row"><label>Здоровье:</label><input type="text" id="dev-armada-health" value="1|1|2|2" style="width:100px;"></div>
+          <div class="dev-row"><label>Скорость (x):</label><input type="text" id="dev-armada-speed" value="1.2|1.5|2.0|2.5" style="width:120px;"></div>
+          <div class="dev-row"><label>Интервал (мс):</label><input type="number" id="dev-armada-wave-interval" value="600" min="100" max="3000"></div>
+        </div>
+      </div>
+      <div class="dev-buttons">
+        <button id="reset-dev-btn">🔄 Сброс (50/30)</button>
+        <button id="apply-dev-btn">✅ ПРИМЕНИТЬ И ИГРАТЬ</button>
+        <button id="close-dev-btn">✖ Закрыть</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="final-victory-screen">
+    <div class="cup">🏆</div>
+    <h1>АБСОЛЮТНАЯ ПОБЕДА!</h1>
+    <div class="stats">
+      <div>Игрок: <span id="final-player-name"></span></div>
+      <div>Итоговый счёт: <span id="final-score"></span></div>
+      <div>Монеты: <span id="final-coins"></span></div>
+      <div>Уровень: <span id="final-level"></span></div>
+      <div>Уничтожено врагов: <span id="final-kills"></span></div>
+    </div>
+    <div>
+      <button class="new-game-btn" onclick="location.reload()">🔄 НОВАЯ ИГРА</button>
+      <button class="next-level-btn" onclick="alert('Следующий уровень в разработке!')">⭐ НОВЫЙ УРОВЕНЬ</button>
+    </div>
+  </div>
+  
+  <div id="pause-menu">
+    <h2>⏸️ ПАУЗА</h2>
+    <div id="controls-info">
+      <div><span class="key">← →</span> или <span class="key">A D</span> — движение</div>
+      <div><span class="key">↑ ↓</span> или <span class="key">W S</span> — вверх/вниз</div>
+      <div><span class="key">Q</span> — вглубь</div>
+      <div><span class="key">ПРОБЕЛ</span> — заливной огонь</div>
+      <div><span class="key">E</span> — ракета</div>
+      <div><span class="key">R</span> — рестарт</div>
+      <div><span class="key">ESC</span> — пауза</div>
+      <div style="color:#ffd700;">🏆 Финальная армада на 15 уровне!</div>
+    </div>
+    <button id="resume-btn">ПРОДОЛЖИТЬ</button>
+  </div>
+  
+  <div id="ui-layer">
+    <div id="screen-flash"></div>
+    <div id="weapon-panel">
+      <div class="weapon-item active"><span class="weapon-icon">🔫</span><div class="weapon-info"><span class="weapon-name">Лазер</span><span class="weapon-level">Ур. 1</span></div></div>
+      <div class="weapon-item active"><span class="weapon-icon">🚀</span><div class="weapon-info"><span class="weapon-name">Ракеты</span><span class="weapon-level">5 шт</span></div></div>
+      <div class="weapon-item"><span class="weapon-icon">🛡️</span><div class="weapon-info"><span class="weapon-name">Щит</span><span class="weapon-level">Нет</span></div></div>
+    </div>
+    <div id="coins-panel">🪙 0</div>
+    <div id="score-panel">Очки: 0 / 50</div>
+    <div id="score-progress"><div id="score-progress-bar"></div></div>
+    <div id="high-score">Рекорд: 0</div>
+    <div id="health-bar-container"><div id="health-bar"></div></div>
+    <div id="health-text">100%</div>
+    <div id="rocket-count">🚀 Ракеты: 5</div>
+    <div id="level-panel">⭐ Уровень 1</div>
+    <div id="armada-wave-panel">⚔️ АРМАДА!</div>
+    <div id="laser-power">🔫 Лазер: 1x</div>
+    <div id="combo-bonus">🔥 Комбо: +0</div>
+    <div id="lock-indicator">🔒 ЗАХВАТ</div>
+    <div id="message"></div>
+    <div id="combo-text"></div>
+    <div id="cool-comment"></div>
+    <div id="target-highlight"><div class="highlight-ring"></div><div class="highlight-diamond"></div></div>
+    <div id="dynamic-crosshair">
+      <div class="crosshair-ring"></div>
+      <div class="crosshair-line top"></div><div class="crosshair-line bottom"></div>
+      <div class="crosshair-line left"></div><div class="crosshair-line right"></div>
+      <div class="crosshair-dot"></div>
+    </div>
+    <div class="instruction">🏆 Финал на 15 уровне! 50/30 очков | Салют + Марш!</div>
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.128.0/build/three.module.js" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    
+    // --- Аудио ---
+    let menuMusic = null, gameplayPlaylist = [], armadaMusic = null, sirenSound = null, victoryMusic = null;
+    let currentMusic = null, currentTrackIndex = 0, audioCtx = null, musicVolume = 0.35;
+    
+    function initAudio() { if (!audioCtx) try { audioCtx = new AudioContext(); } catch(e) {} }
+    
+    function loadMusicFromSettings() {
+      stopAllMusic();
+      gameplayPlaylist = [];
+      const tracks = [
+        document.getElementById('dev-track1').value,
+        document.getElementById('dev-track2').value,
+        document.getElementById('dev-track3').value
+      ].filter(t => t.trim());
+      
+      tracks.forEach(trackFile => {
+        const audio = new Audio(trackFile);
+        audio.volume = musicVolume;
+        audio.addEventListener('ended', () => { if (gameActive && !armadaWaveActive && !finalVictory) playNextGameplayTrack(); });
+        gameplayPlaylist.push(audio);
+      });
+      
+      const menuFile = document.getElementById('dev-menu-music').value;
+      if (menuFile) { menuMusic = new Audio(menuFile); menuMusic.loop = true; menuMusic.volume = musicVolume; }
+      
+      const armadaFile = document.getElementById('dev-armada-music').value;
+      if (armadaFile) { armadaMusic = new Audio(armadaFile); armadaMusic.loop = true; armadaMusic.volume = musicVolume * 1.3; }
+      
+      const sirenFile = document.getElementById('dev-siren-sound').value;
+      if (sirenFile) {
+        sirenSound = new Audio(sirenFile);
+        sirenSound.volume = musicVolume * 1.5;
+        sirenSound.loop = false;
+        sirenSound.addEventListener('ended', () => {
+          if (armadaWaveActive && armadaMusic) {
+            armadaMusic.currentTime = 0;
+            armadaMusic.play().catch(() => {});
+            currentMusic = armadaMusic;
+          }
+        });
+      }
+      
+      const victoryFile = document.getElementById('dev-victory-music').value;
+      if (victoryFile) {
+        victoryMusic = new Audio(victoryFile);
+        victoryMusic.loop = true;
+        victoryMusic.volume = musicVolume * 1.2;
+      }
+    }
+    
+    function playNextGameplayTrack() {
+      if (!gameActive || gameplayPlaylist.length === 0) return;
+      currentTrackIndex = (currentTrackIndex + 1) % gameplayPlaylist.length;
+      gameplayPlaylist[currentTrackIndex].currentTime = 0;
+      gameplayPlaylist[currentTrackIndex].play().catch(() => {});
+      currentMusic = gameplayPlaylist[currentTrackIndex];
+    }
+    
+    function playMusic(music) {
+      if (currentMusic === music && !music.paused) return;
+      stopAllMusic();
+      if (music) { music.currentTime = 0; music.play().catch(() => {}); currentMusic = music; }
+    }
+    
+    function playGameplayPlaylist() {
+      stopAllMusic();
+      if (gameplayPlaylist.length === 0) return;
+      currentTrackIndex = 0;
+      gameplayPlaylist[0].currentTime = 0;
+      gameplayPlaylist[0].play().catch(() => {});
+      currentMusic = gameplayPlaylist[0];
+    }
+    
+    function playSiren() { if (sirenSound) { stopAllMusic(); sirenSound.currentTime = 0; sirenSound.play().catch(() => {}); } }
+    
+    function playVictoryMarch() {
+      if (victoryMusic) {
+        stopAllMusic();
+        victoryMusic.currentTime = 0;
+        victoryMusic.play().catch(() => {});
+        currentMusic = victoryMusic;
+      }
+    }
+    
+    function stopAllMusic() {
+      if (menuMusic) { menuMusic.pause(); menuMusic.currentTime = 0; }
+      gameplayPlaylist.forEach(t => { if (t) { t.pause(); t.currentTime = 0; } });
+      if (armadaMusic) { armadaMusic.pause(); armadaMusic.currentTime = 0; }
+      if (sirenSound) { sirenSound.pause(); sirenSound.currentTime = 0; }
+      if (victoryMusic) { victoryMusic.pause(); victoryMusic.currentTime = 0; }
+      currentMusic = null;
+    }
+    
+    function playTone(freq, dur, vol = 0.06, type = 'square') {
+      if (!audioCtx) return;
+      try {
+        const now = audioCtx.currentTime;
+        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        o.type = type; o.frequency.setValueAtTime(freq, now);
+        g.gain.setValueAtTime(vol, now); g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now + dur);
+      } catch(e) {}
+    }
+    
+    function sfxLaser(p) { playTone(600 + p * 200, 0.08, 0.04 * p, 'sawtooth'); }
+    function sfxExplosion() { playTone(80, 0.3, 0.1, 'square'); }
+    function sfxRocket() { playTone(200, 0.3, 0.08, 'sawtooth'); }
+    function sfxLock() { playTone(1000, 0.1, 0.03, 'sine'); }
+    function sfxLevelUp() { [400,600,800,1000].forEach((f,i) => setTimeout(() => playTone(f, 0.15, 0.06, 'triangle'), i*80)); }
+    function sfxCool() { [800,1000,1200].forEach((f,i) => setTimeout(() => playTone(f, 0.1, 0.08, 'sine'), i*60)); }
+    function sfxCoin() { playTone(1200, 0.1, 0.06, 'sine'); setTimeout(() => playTone(1600, 0.1, 0.06, 'sine'), 80); }
+    function sfxHeal() { [500,700,900].forEach((f,i) => setTimeout(() => playTone(f, 0.15, 0.05, 'sine'), i*100)); }
+    function sfxFanfare() { [523,659,784,1047,1319,1568].forEach((f,i) => setTimeout(() => playTone(f, 0.3, 0.08, 'triangle'), i*120)); }
+    
+    // --- Настройки ---
+    const DEFAULTS = {
+      tracks: ['gameplay1.mp3','gameplay2.mp3','gameplay3.mp3'],
+      menuMusic: 'menu.mp3', armadaMusic: 'armada.mp3', sirenSound: 'sirena.mp3', victoryMusic: 'victory.mp3',
+      basePoints: 50, pointsInc: 30, maxEnemies: 18, enemiesPerLvl: 5,
+      spawnInterval: 1500, spawnDecrease: 80, enemySpeed: 0.03,
+      shipsLevel: 3, maxShips: 3, shipChance: 0.005,
+      armadaLevels: [5,7,10,15], armadaShipsCount: [15,25,30,40], armadaHealth: [1,1,2,2], armadaSpeed: [1.2,1.5,2.0,2.5],
+      armadaWaveInterval: 600
+    };
+    let DEV = JSON.parse(JSON.stringify(DEFAULTS));
+    
+    // --- Константы ---
+    const GAME_AREA_WIDTH = 8, GAME_AREA_HEIGHT = 5, GAME_AREA_DEPTH = 8;
+    const SHIP_SPEED = 0.15, LASER_SPEED = 0.7, ROCKET_SPEED = 0.3;
+    const MAX_HEALTH = 100, BASE_ROCKETS = 5;
+    const CROSSHAIR_DIST = 4.5, LOCK_DIST = 2.8;
+    const COMBO_BONUSES = { 2:10, 3:20, 4:50 };
+    const COMBO_TIMEOUT = 2000;
+    const MAX_PARTICLES = 150, MAX_LASERS = 30;
+    const FIREWORKS_DURATION = 5000;
+    
+    const RAINBOW_COLORS = [0xff0000,0xff4400,0xff8800,0xffcc00,0xffff00,0xccff00,0x88ff00,0x44ff00,0x00ff44,0x00ff88,0x00ffcc,0x00ffff,0x00ccff,0x0088ff,0x0044ff,0x4400ff,0x8800ff,0xcc00ff,0xff00cc,0xff0088];
+    const PLATONIC_COLORS = { tetrahedron:{color:0xff5555,emissive:0xff0000}, cube:{color:0x55aaff,emissive:0x0044ff}, octahedron:{color:0xcc55ff,emissive:0x8800ff}, dodecahedron:{color:0x55ff88,emissive:0x00ff44}, icosahedron:{color:0xffaa44,emissive:0xff6600} };
+    
+    // --- Сцена ---
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x000015);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 300);
+    camera.position.set(0, 2, 8); camera.lookAt(0, 0, -5);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    document.body.appendChild(renderer.domElement);
+    
+    scene.add(new THREE.AmbientLight(0x445566, 0.8));
+    scene.add(new THREE.DirectionalLight(0xffffff, 0.7).translate(0, 5, 5));
+    scene.add(new THREE.PointLight(0xffffff, 0.5, 20).translate(0, 0, -5));
+    
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(800*3);
+    for(let i=0;i<800*3;i+=3){starPos[i]=(Math.random()-0.5)*40;starPos[i+1]=(Math.random()-0.5)*25;starPos[i+2]=(Math.random()-0.5)*40-5;}
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color:0x8899cc,size:0.06,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:0.7}));
+    scene.add(stars);
+    
+    const fireworksParticles = [];
+    let fireworksActive = false;
+    let fireworksStartTime = 0;
+    
+    function spawnFirework() {
+      const colors = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff, 0x44ffff, 0xff8800, 0xff0088];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const center = new THREE.Vector3((Math.random()-0.5)*10, (Math.random()-0.5)*6, (Math.random()-0.5)*8-3);
+      for (let i = 0; i < 30; i++) {
+        const geo = new THREE.SphereGeometry(0.08, 4, 4);
+        const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
+        const particle = new THREE.Mesh(geo, mat);
+        particle.position.copy(center);
+        const vel = new THREE.Vector3((Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8);
+        particle.userData = { vel, life: 1.5 + Math.random() };
+        scene.add(particle);
+        fireworksParticles.push(particle);
+      }
+      playTone(600 + Math.random()*400, 0.2, 0.03, 'sine');
+    }
+    
+    function updateFireworks(now) {
+      if (!fireworksActive) return;
+      if (now - fireworksStartTime < FIREWORKS_DURATION) {
+        if (Math.random() < 0.7) spawnFirework();
+      }
+      for (let i = fireworksParticles.length-1; i >= 0; i--) {
+        const p = fireworksParticles[i];
+        p.position.add(p.userData.vel);
+        p.userData.vel.multiplyScalar(0.96);
+        p.userData.life -= 0.02;
+        p.material.opacity = p.userData.life;
+        if (p.userData.life <= 0) { scene.remove(p); fireworksParticles.splice(i, 1); }
+      }
+    }
+    
+    function startFireworks() { fireworksActive = true; fireworksStartTime = Date.now(); sfxFanfare(); playVictoryMarch(); }
+    function stopFireworks() { fireworksActive = false; fireworksParticles.forEach(p => scene.remove(p)); fireworksParticles.length = 0; }
+    
+    const earthGroup = new THREE.Group();
+    earthGroup.add(new THREE.Mesh(new THREE.SphereGeometry(8,64,64), new THREE.MeshPhongMaterial({map:new THREE.TextureLoader().load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'),specular:0x333333,shininess:15})));
+    earthGroup.add(new THREE.Mesh(new THREE.SphereGeometry(8.2,64,64), new THREE.ShaderMaterial({vertexShader:`varying vec3 vNormal;varying vec3 vPosition;void main(){vec4 wp=modelMatrix*vec4(position,1.0);vNormal=normalize(mat3(modelMatrix)*normal);vPosition=wp.xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,fragmentShader:`varying vec3 vNormal;varying vec3 vPosition;void main(){vec3 vd=normalize(cameraPosition-vPosition);float i=pow(0.7-dot(vNormal,vd),2.5);gl_FragColor=vec4(0.3,0.6,1.0,0.3)*i;}`,blending:THREE.AdditiveBlending,side:THREE.FrontSide,transparent:true,depthWrite:false})));
+    earthGroup.position.set(0,0,-60); earthGroup.visible = false; scene.add(earthGroup);
+    
+    const shipGroup = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.ConeGeometry(0.3,0.9,6).rotateX(Math.PI/2), new THREE.MeshStandardMaterial({color:0x4488ff,metalness:0.8,roughness:0.2,emissive:0x001133,emissiveIntensity:0.5}));
+    shipGroup.add(body);
+    shipGroup.add(new THREE.Mesh(new THREE.BoxGeometry(0.8,0.08,0.25), new THREE.MeshStandardMaterial({color:0x2266cc,metalness:0.9,roughness:0.3})).translateZ(-0.15));
+    const engMat = new THREE.MeshStandardMaterial({color:0xff6600,emissive:0xff2200,emissiveIntensity:0.8});
+    shipGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,0.4,8).rotateX(Math.PI/2), engMat).translate(-0.25,-0.05,0.15));
+    shipGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,0.4,8).rotateX(Math.PI/2), engMat).translate(0.25,-0.05,0.15));
+    shipGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.6,12,12), new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:0.1,blending:THREE.AdditiveBlending,depthWrite:false})));
+    shipGroup.position.set(0,0,1); scene.add(shipGroup);
+    
+    const trophy = new THREE.Group();
+    trophy.add(new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.4,12), new THREE.MeshStandardMaterial({color:0xffd700,metalness:0.9,emissive:0x332200,emissiveIntensity:0.5})).translateY(-1));
+    trophy.add(new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,0.8,8), new THREE.MeshStandardMaterial({color:0xffd700,metalness:0.9})).translateY(-0.4));
+    trophy.add(new THREE.Mesh(new THREE.SphereGeometry(0.5,16,16,0,Math.PI*2,0,Math.PI/2), new THREE.MeshStandardMaterial({color:0xffd700,metalness:0.9,emissive:0x332200,emissiveIntensity:0.5})).translateY(0));
+    trophy.position.set(0,2,-4); trophy.visible = false; scene.add(trophy);
+    
+    // --- Состояние ---
+    let playerName='', score=0, levelScore=0, highScore=0, coins=0, totalKills=0;
+    let health=MAX_HEALTH, rockets=BASE_ROCKETS;
+    let level=1, laserPower=1, pointsToLevel=DEV.basePoints;
+    let enemySpeed=DEV.enemySpeed, spawnInterval=DEV.spawnInterval;
+    let gameActive=false, gameOver=false, gameStarted=false, isPaused=false, victory=false, finalVictory=false;
+    let hasShield=false;
+    let comboCount=0, comboTimer=null, coolTimer=null, lastHitTime=0;
+    let lockedEnemy=null;
+    let lastSpawn=0, lastRefill=0, lastAsteroidSpawn=0, lastCoinSpawn=0, lastMedkitSpawn=0;
+    let canShoot=true, spaceHeld=false;
+    
+    let armadaWaveActive = false, armadaWaveLevel = 0, armadaShipsRemaining = 0, armadaSpawnTimer = 0;
+    let armadaTriggeredForLevel = new Set();
+    
+    let finalSceneActive=false, finalScenePhase=0, finalSceneTimer=0, epicFlightSpeed=0;
+    const keys={};
+    const enemies=[], lasers=[], rockets_list=[], explosions=[], enemyLasers=[], enemyShips=[], armadaShips=[];
+    const asteroids=[], coins_list=[], medkits=[];
+    
+    // --- UI ---
+    const scoreEl=document.getElementById('score-panel'), highScoreEl=document.getElementById('high-score');
+    const messageEl=document.getElementById('message'), comboEl=document.getElementById('combo-text');
+    const coolCommentEl=document.getElementById('cool-comment'), flashEl=document.getElementById('screen-flash');
+    const healthBar=document.getElementById('health-bar'), healthText=document.getElementById('health-text');
+    const rocketEl=document.getElementById('rocket-count'), levelEl=document.getElementById('level-panel');
+    const armadaWavePanel=document.getElementById('armada-wave-panel');
+    const laserEl=document.getElementById('laser-power'), comboBonusEl=document.getElementById('combo-bonus');
+    const lockEl=document.getElementById('lock-indicator'), progressBar=document.getElementById('score-progress-bar');
+    const coinsEl=document.getElementById('coins-panel'), crosshair=document.getElementById('dynamic-crosshair');
+    const targetHL=document.getElementById('target-highlight');
+    const nameScreen=document.getElementById('name-screen'), devScreen=document.getElementById('dev-screen');
+    const pauseMenu=document.getElementById('pause-menu'), finalVictoryScreen=document.getElementById('final-victory-screen');
+    
+    function updateUI() {
+      scoreEl.textContent=`Очки: ${levelScore} / ${pointsToLevel}`;
+      highScoreEl.textContent=`Рекорд: ${highScore}`;
+      rocketEl.textContent=`🚀 Ракеты: ${rockets}`;
+      levelEl.textContent=`⭐ Уровень ${level}`;
+      laserEl.textContent=`🔫 Лазер: ${laserPower}x`;
+      coinsEl.textContent=`🪙 ${coins}`;
+      progressBar.style.width=`${Math.min(100,(levelScore/pointsToLevel)*100)}%`;
+      const hp=Math.max(0,health);
+      healthBar.style.width=hp+'%'; healthText.textContent=Math.round(hp)+'%';
+      healthBar.style.background=hp>60?'#44ff66':hp>30?'#ffaa44':'#ff4466';
+      armadaWavePanel.style.display=armadaWaveActive?'block':'none';
+      if(armadaWaveActive) armadaWavePanel.textContent=`⚔️ АРМАДА! Осталось: ${armadaShipsRemaining}`;
+    }
+    
+    function showMessage(text,dur=500){messageEl.textContent=text;messageEl.classList.add('visible');if(dur>0)setTimeout(()=>messageEl.classList.remove('visible'),dur);}
+    function showCoolComment(){coolCommentEl.textContent=['ВАУ!','КРУТО!','ОГО!','ОГОНЬ!','УЛЁТ!','БУМ!','СУПЕР!','МОЩЬ!'][Math.floor(Math.random()*8)];coolCommentEl.classList.add('show');clearTimeout(coolTimer);coolTimer=setTimeout(()=>coolCommentEl.classList.remove('show'),800);sfxCool();}
+    function flashScreen(d=100){flashEl.style.opacity='0.3';setTimeout(()=>flashEl.style.opacity='0',d);}
+    function projectToScreen(wp){const v=wp.clone().project(camera);return{x:(v.x*0.5+0.5)*window.innerWidth,y:(-v.y*0.5+0.5)*window.innerHeight};}
+    function getLaserColor(){return RAINBOW_COLORS[Math.min(level-1,RAINBOW_COLORS.length-1)];}
+    function upgradeShip(){shipGroup.scale.setScalar(Math.min(1.6,1+level*0.08));body.material.color.setHex([0x4488ff,0x44aaff,0x44ccff,0x44ffcc,0x44ff88,0x88ff44,0xccff44,0xffcc44,0xff8844,0xff4444][Math.min(level-1,9)]);}
+    
+    function findLockedEnemy(){const ap=shipGroup.position.clone().add(new THREE.Vector3(0,0,-CROSSHAIR_DIST));let ce=null,cd=LOCK_DIST;[...enemies,...enemyShips,...armadaShips].forEach(e=>{if(!e.mesh)return;const d=ap.distanceTo(e.mesh.position);if(d<cd){cd=d;ce=e;}});return ce;}
+    
+    function updateCrosshair(){
+      const sp=projectToScreen(shipGroup.position.clone().add(new THREE.Vector3(0,0,-CROSSHAIR_DIST)));
+      crosshair.style.left=sp.x+'px';crosshair.style.top=sp.y+'px';
+      const nle=findLockedEnemy();if(nle!==lockedEnemy){if(nle)sfxLock();lockedEnemy=nle;}
+      const ring=crosshair.querySelector('.crosshair-ring'),dot=crosshair.querySelector('.crosshair-dot'),lines=crosshair.querySelectorAll('.crosshair-line');
+      if(lockedEnemy?.mesh){lockEl.classList.add('locked');ring.classList.add('locked');dot.classList.add('locked');lines.forEach(l=>l.classList.add('locked'));const esp=projectToScreen(lockedEnemy.mesh.position);targetHL.style.left=esp.x+'px';targetHL.style.top=esp.y+'px';targetHL.style.opacity='1';}
+      else{lockEl.classList.remove('locked');targetHL.style.opacity='0';ring.classList.remove('locked');dot.classList.remove('locked');lines.forEach(l=>l.classList.remove('locked'));}
+    }
+    
+    function addScore(pts,now=Date.now()){
+      levelScore+=pts;score+=pts;
+      if(now-lastHitTime<COMBO_TIMEOUT)comboCount++;else comboCount=1;
+      lastHitTime=now;
+      if(comboCount>=2&&comboCount<=4){const bonus=COMBO_BONUSES[Math.min(comboCount,4)]||0;levelScore+=bonus;score+=bonus;comboBonusEl.textContent=`🔥 Комбо: +${bonus}`;comboBonusEl.style.opacity='1';setTimeout(()=>comboBonusEl.style.opacity='0',1500);}
+      updateUI();
+      if (levelScore >= pointsToLevel && !victory && !finalSceneActive && !armadaWaveActive && !finalVictory) {
+        if (DEV.armadaLevels.includes(level) && !armadaTriggeredForLevel.has(level)) {
+          startArmadaWave(level);
+        } else if (!armadaWaveActive) {
+          nextLevel();
+        }
+      }
+    }
+    
+    function spawnEnemy(){
+      if(!gameActive||isPaused||finalSceneActive||finalVictory)return;
+      const maxEnemies=DEV.maxEnemies+(level>=5?(level-4)*DEV.enemiesPerLvl:0);
+      if(enemies.length>maxEnemies)return;
+      const types=['tetrahedron','cube','octahedron','dodecahedron','icosahedron'];
+      const type=types[Math.floor(Math.random()*types.length)];
+      const size=0.3+Math.random()*0.5;const pd=PLATONIC_COLORS[type];
+      let geo,pts;
+      switch(type){case'tetrahedron':geo=new THREE.TetrahedronGeometry(size,0);pts=4;break;case'cube':geo=new THREE.BoxGeometry(size,size,size);pts=6;break;case'octahedron':geo=new THREE.OctahedronGeometry(size,0);pts=8;break;case'dodecahedron':geo=new THREE.DodecahedronGeometry(size,0);pts=12;break;case'icosahedron':geo=new THREE.IcosahedronGeometry(size,0);pts=20;break;}
+      const mat=new THREE.MeshStandardMaterial({color:pd.color,emissive:pd.emissive,emissiveIntensity:0.7,metalness:0.3,roughness:0.4});
+      const mesh=new THREE.Mesh(geo,mat);
+      mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.4})));
+      mesh.position.set((Math.random()-0.5)*GAME_AREA_WIDTH,(Math.random()-0.5)*GAME_AREA_HEIGHT,-15);
+      mesh.userData={points:pts,size,rot:new THREE.Vector3((Math.random()-0.5)*0.05,(Math.random()-0.5)*0.05,(Math.random()-0.5)*0.05)};
+      scene.add(mesh);enemies.push({mesh,speed:enemySpeed+Math.random()*0.04});
+    }
+    
+    function spawnArmadaShip(){
+      const ship=new THREE.Group();
+      ship.add(new THREE.Mesh(new THREE.ConeGeometry(0.2,0.6,4).rotateX(Math.PI/2),new THREE.MeshStandardMaterial({color:0xff3333,emissive:0x440000,emissiveIntensity:0.7,metalness:0.5,roughness:0.3})));
+      ship.add(new THREE.Mesh(new THREE.BoxGeometry(0.5,0.06,0.15),new THREE.MeshStandardMaterial({color:0xdd2222,emissive:0x330000,emissiveIntensity:0.5})).translateZ(-0.08));
+      ship.position.set((Math.random()-0.5)*GAME_AREA_WIDTH,(Math.random()-0.5)*GAME_AREA_HEIGHT,-15);
+      ship.rotation.z=Math.PI;
+      scene.add(ship);
+      const idx=DEV.armadaLevels.indexOf(armadaWaveLevel);
+      const health=DEV.armadaHealth[idx]||2;
+      const speed=DEV.enemySpeed*(DEV.armadaSpeed[idx]||1.5);
+      armadaShips.push({mesh:ship,speed:speed+Math.random()*0.03,health:health,lastShot:Date.now()+Math.random()*2000,interval:1500});
+      armadaShipsRemaining--;
+    }
+    
+    function startArmadaWave(armLvl){
+      armadaWaveActive=true; armadaWaveLevel=armLvl;
+      armadaTriggeredForLevel.add(armLvl);
+      const idx=DEV.armadaLevels.indexOf(armLvl);
+      armadaShipsRemaining=DEV.armadaShipsCount[idx]||20;
+      armadaSpawnTimer=0;
+      playSiren();
+      showMessage(`🚨 АРМАДА! Уровень ${armLvl}`,500);
+      flashScreen(300); updateUI();
+    }
+    
+    function endArmadaWave(){
+      armadaWaveActive=false;
+      armadaShips.forEach(s=>{if(s.mesh)scene.remove(s.mesh);});
+      armadaShips.length=0;
+      if (armadaWaveLevel >= 15) {
+        finalVictory=true; gameActive=false; victory=true;
+        armadaWaveLevel=0; armadaShipsRemaining=0;
+        stopAllMusic(); startFireworks();
+        trophy.visible=true; trophy.position.set(0,2,-3);
+        document.getElementById('final-player-name').textContent=playerName;
+        document.getElementById('final-score').textContent=score;
+        document.getElementById('final-coins').textContent=coins;
+        document.getElementById('final-level').textContent=level;
+        document.getElementById('final-kills').textContent=totalKills;
+        setTimeout(()=>{finalVictoryScreen.classList.add('visible');},1500);
+        crosshair.style.opacity='0'; targetHL.style.opacity='0'; lockEl.classList.remove('locked');
+        showMessage('🏆 АБСОЛЮТНАЯ ПОБЕДА!',0);
+      } else {
+        stopAllMusic(); playGameplayPlaylist();
+        level++; pointsToLevel=DEV.basePoints+level*DEV.pointsInc;
+        enemySpeed=DEV.enemySpeed+level*0.01;
+        spawnInterval=Math.max(300,DEV.spawnInterval-level*DEV.spawnDecrease);
+        laserPower=Math.min(5,level);
+        rockets=Math.min(10,BASE_ROCKETS+level);
+        health=Math.min(MAX_HEALTH,health+60); levelScore=0;
+        hasShield=true; upgradeShip(); updateUI();
+        showMessage(`✅ Армада отбита! ⭐ УРОВЕНЬ ${level}!`,500);
+        sfxLevelUp(); flashScreen(200); lastSpawn=Date.now();
+      }
+    }
+    
+    function shootLaser(){if(!gameActive||isPaused||lasers.length>MAX_LASERS||finalSceneActive||finalVictory)return;sfxLaser(laserPower);const lr=0.05+laserPower*0.03;const laser=new THREE.Mesh(new THREE.CylinderGeometry(lr,lr,0.8,6).rotateX(Math.PI/2),new THREE.MeshBasicMaterial({color:getLaserColor()}));laser.position.copy(shipGroup.position).z-=0.6;scene.add(laser);lasers.push({mesh:laser,speed:LASER_SPEED,radius:lr*3});}
+    function launchRocket(){if(!gameActive||rockets<=0||isPaused||rockets_list.length>10||finalSceneActive||finalVictory)return;rockets--;updateUI();sfxRocket();const rocket=new THREE.Mesh(new THREE.ConeGeometry(0.1,0.5,4).rotateX(Math.PI/2),new THREE.MeshBasicMaterial({color:0xff4444}));rocket.position.copy(shipGroup.position).z-=0.8;scene.add(rocket);rockets_list.push({mesh:rocket,target:lockedEnemy,speed:ROCKET_SPEED,life:5});}
+    function createExplosion(pos,color=0xffaa44){if(explosions.length>MAX_PARTICLES)return;sfxExplosion();for(let i=0;i<10&&explosions.length<MAX_PARTICLES;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(0.05,3,3),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false}));p.position.copy(pos);p.userData={vel:new THREE.Vector3((Math.random()-0.5)*0.3,(Math.random()-0.5)*0.3,(Math.random()-0.5)*0.3),life:1};scene.add(p);explosions.push(p);}}
+    function damageShip(amount){if(!gameActive||isPaused||finalSceneActive||finalVictory)return;if(hasShield){hasShield=false;updateUI();showMessage('🛡️ Щит!',500);return;}health-=amount;updateUI();flashScreen(80);if(health<=0){health=0;updateUI();endGame();}}
+    
+    function nextLevel(){
+      level++; pointsToLevel=DEV.basePoints+level*DEV.pointsInc;
+      enemySpeed=DEV.enemySpeed+level*0.01;
+      spawnInterval=Math.max(300,DEV.spawnInterval-level*DEV.spawnDecrease);
+      laserPower=Math.min(5,level);
+      rockets=Math.min(10,BASE_ROCKETS+level);
+      health=Math.min(MAX_HEALTH,health+50); levelScore=0;
+      if(level>=3)hasShield=true;
+      upgradeShip(); updateUI();
+      showMessage(`⭐ УРОВЕНЬ ${level}!`,500);
+      sfxLevelUp(); flashScreen(200); lastSpawn=Date.now();
+    }
+    
+    function endGame(){gameActive=false;gameOver=true;isPaused=false;pauseMenu.classList.remove('visible');showMessage('GAME OVER',0);[enemies,lasers,rockets_list,enemyLasers,enemyShips,armadaShips,asteroids,coins_list,medkits].forEach(a=>{a.forEach(o=>scene.remove(o.mesh||o));a.length=0;});armadaWaveActive=false;armadaTriggeredForLevel.clear();finalSceneActive=false;finalVictory=false;stopFireworks();stopAllMusic();setTimeout(()=>{nameScreen.classList.remove('hidden');updateUI();},2000);}
+    
+    function applyDevAndStart(){
+      DEV.tracks=[document.getElementById('dev-track1').value,document.getElementById('dev-track2').value,document.getElementById('dev-track3').value];
+      DEV.menuMusic=document.getElementById('dev-menu-music').value;
+      DEV.armadaMusic=document.getElementById('dev-armada-music').value;
+      DEV.sirenSound=document.getElementById('dev-siren-sound').value;
+      DEV.victoryMusic=document.getElementById('dev-victory-music').value;
+      DEV.basePoints=parseInt(document.getElementById('dev-base-points').value)||50;
+      DEV.pointsInc=parseInt(document.getElementById('dev-points-inc').value)||30;
+      DEV.maxEnemies=parseInt(document.getElementById('dev-max-enemies').value)||18;
+      DEV.enemiesPerLvl=parseInt(document.getElementById('dev-enemies-per-lvl').value)||5;
+      DEV.spawnInterval=parseInt(document.getElementById('dev-spawn-interval').value)||1500;
+      DEV.spawnDecrease=parseInt(document.getElementById('dev-spawn-decrease').value)||80;
+      DEV.enemySpeed=parseFloat(document.getElementById('dev-enemy-speed').value)||0.03;
+      DEV.shipsLevel=parseInt(document.getElementById('dev-ships-level').value)||3;
+      DEV.maxShips=parseInt(document.getElementById('dev-max-ships').value)||3;
+      DEV.shipChance=parseFloat(document.getElementById('dev-ship-chance').value)||0.005;
+      DEV.armadaLevels=document.getElementById('dev-armada-levels').value.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+      DEV.armadaShipsCount=document.getElementById('dev-armada-ships-count').value.split('|').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+      DEV.armadaHealth=document.getElementById('dev-armada-health').value.split('|').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+      DEV.armadaSpeed=document.getElementById('dev-armada-speed').value.split('|').map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
+      DEV.armadaWaveInterval=parseInt(document.getElementById('dev-armada-wave-interval').value)||600;
+      while(DEV.armadaShipsCount.length<DEV.armadaLevels.length)DEV.armadaShipsCount.push(15);
+      while(DEV.armadaHealth.length<DEV.armadaLevels.length)DEV.armadaHealth.push(1);
+      while(DEV.armadaSpeed.length<DEV.armadaLevels.length)DEV.armadaSpeed.push(1.5);
+      musicVolume=parseInt(document.getElementById('dev-music-volume').value)/100;
+      loadMusicFromSettings();
+      playerName=document.getElementById('player-name-input').value.trim()||'DevTester';
+      devScreen.classList.remove('visible');
+      startGameInternal();
+    }
+    
+    function startGameInternal(){
+      nameScreen.classList.add('hidden');
+      [enemies,lasers,rockets_list,explosions,enemyLasers,enemyShips,armadaShips,asteroids,coins_list,medkits].forEach(a=>{a.forEach(o=>scene.remove(o.mesh||o));a.length=0;});
+      score=0;levelScore=0;coins=0;totalKills=0;health=MAX_HEALTH;rockets=BASE_ROCKETS;
+      level=1;laserPower=1;pointsToLevel=DEV.basePoints;
+      enemySpeed=DEV.enemySpeed;spawnInterval=DEV.spawnInterval;
+      comboCount=0;lastHitTime=0;hasShield=false;lockedEnemy=null;
+      armadaWaveActive=false;armadaWaveLevel=0;armadaShipsRemaining=0;
+      armadaTriggeredForLevel.clear();
+      finalSceneActive=false;finalVictory=false;victory=false;
+      earthGroup.visible=false;trophy.visible=false;finalVictoryScreen.classList.remove('visible');
+      stopFireworks();
+      gameActive=true;gameOver=false;gameStarted=true;isPaused=false;
+      pauseMenu.classList.remove('visible');
+      shipGroup.position.set(0,0,1);shipGroup.scale.setScalar(1);
+      body.material.color.setHex(0x4488ff);
+      camera.position.set(0,2,8);camera.lookAt(0,0,-5);stars.position.z=0;
+      crosshair.style.opacity='1';
+      updateUI();messageEl.classList.remove('visible');comboEl.classList.remove('show');
+      lockEl.classList.remove('locked');targetHL.style.opacity='0';
+      lastSpawn=Date.now();lastRefill=Date.now();lastAsteroidSpawn=Date.now();lastCoinSpawn=Date.now();lastMedkitSpawn=Date.now();
+      stopAllMusic();playGameplayPlaylist();initAudio();
+    }
+    
+    function startGame(){
+      playerName=document.getElementById('player-name-input').value.trim()||'Капитан';
+      loadMusicFromSettings();
+      startGameInternal();
+    }
+    
+    // --- Обработчики ---
+    document.getElementById('start-game-btn').addEventListener('click', startGame);
+    document.getElementById('open-dev-btn').addEventListener('click', ()=>{ devScreen.classList.add('visible'); });
+    document.getElementById('close-dev-btn').addEventListener('click', ()=>{ devScreen.classList.remove('visible'); });
+    document.getElementById('resume-btn').addEventListener('click', ()=>{isPaused=false;pauseMenu.classList.remove('visible');});
+    document.getElementById('player-name-input').addEventListener('keydown', e=>{if(e.key==='Enter')startGame();});
+    document.getElementById('apply-dev-btn').addEventListener('click', applyDevAndStart);
+    document.getElementById('reset-dev-btn').addEventListener('click', ()=>{
+      document.getElementById('dev-track1').value='gameplay1.mp3';document.getElementById('dev-track2').value='gameplay2.mp3';document.getElementById('dev-track3').value='gameplay3.mp3';
+      document.getElementById('dev-menu-music').value='menu.mp3';document.getElementById('dev-armada-music').value='armada.mp3';document.getElementById('dev-siren-sound').value='sirena.mp3';
+      document.getElementById('dev-victory-music').value='victory.mp3';
+      document.getElementById('dev-base-points').value=50;document.getElementById('dev-points-inc').value=30;
+      document.getElementById('dev-max-enemies').value=18;document.getElementById('dev-enemies-per-lvl').value=5;
+      document.getElementById('dev-spawn-interval').value=1500;document.getElementById('dev-spawn-decrease').value=80;
+      document.getElementById('dev-enemy-speed').value=0.03;document.getElementById('dev-ships-level').value=3;
+      document.getElementById('dev-max-ships').value=3;document.getElementById('dev-ship-chance').value=0.005;
+      document.getElementById('dev-armada-levels').value='5,7,10,15';document.getElementById('dev-armada-ships-count').value='15|25|30|40';
+      document.getElementById('dev-armada-health').value='1|1|2|2';document.getElementById('dev-armada-speed').value='1.2|1.5|2.0|2.5';
+      document.getElementById('dev-armada-wave-interval').value=600;
+    });
+    document.getElementById('unlock-btn').addEventListener('click', ()=>{
+      if(document.getElementById('password-input').value==='1234'){document.getElementById('dev-settings').style.display='block';document.getElementById('password-section').style.display='none';}
+      else{document.getElementById('password-error').style.display='block';}
+    });
+    document.getElementById('dev-music-volume').addEventListener('input', function(){document.getElementById('vol-label').textContent=this.value+'%';});
+    
+    window.addEventListener('keydown', e=>{
+      if(!gameStarted&&e.key==='Enter'){startGame();return;}
+      if(e.code==='Escape'||e.code==='KeyP'){if(gameActive&&!victory&&!finalSceneActive&&!finalVictory){isPaused=!isPaused;pauseMenu.classList.toggle('visible',isPaused);}return;}
+      if(!gameActive||isPaused||victory||finalVictory)return;
+      keys[e.code]=true;
+      if(['Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','KeyR'].includes(e.code))e.preventDefault();
+      if(e.code==='Space'){spaceHeld=true;shootLaser();}
+      if(e.code==='KeyE')launchRocket();
+      if(e.code==='KeyR'&&gameOver)startGame();
+    });
+    window.addEventListener('keyup', e=>{keys[e.code]=false;if(e.code==='Space')spaceHeld=false;});
+    renderer.domElement.addEventListener('click', ()=>{initAudio();});
+    
+    // --- Игровой цикл ---
+    let autoFireTimer=0;
+    
+    function update(){
+      const now=Date.now();
+      if (finalVictory) { updateFireworks(now); if(trophy.visible){trophy.rotation.y+=0.03;trophy.position.y=2+Math.sin(now*0.002)*0.3;} stars.position.z+=0.02; if(stars.position.z>10)stars.position.z=-15; renderer.render(scene,camera); return; }
+      if(finalSceneActive){renderer.render(scene,camera);return;}
+      if(!gameActive&&!gameOver)return;
+      if(isPaused||victory)return;
+      if(spaceHeld&&gameActive&&!isPaused){if(now-autoFireTimer>120){shootLaser();autoFireTimer=now;}}
+      if(gameActive&&!finalSceneActive){
+        let mx=0,my=0,mz=0;
+        if(keys['ArrowLeft']||keys['KeyA'])mx=-SHIP_SPEED; if(keys['ArrowRight']||keys['KeyD'])mx=SHIP_SPEED;
+        if(keys['ArrowUp']||keys['KeyW'])my=SHIP_SPEED; if(keys['ArrowDown']||keys['KeyS'])my=-SHIP_SPEED;
+        if(keys['KeyQ'])mz=-SHIP_SPEED;
+        shipGroup.position.x=Math.max(-4,Math.min(4,shipGroup.position.x+mx));
+        shipGroup.position.y=Math.max(-2.5,Math.min(2.5,shipGroup.position.y+my));
+        shipGroup.position.z=Math.max(-3,Math.min(5,shipGroup.position.z+mz));
+        shipGroup.rotation.z+=(-mx*3-shipGroup.rotation.z)*0.1; shipGroup.rotation.x+=(my*2-shipGroup.rotation.x)*0.1;
+      }
+      updateCrosshair();
+      if(now-lastHitTime>COMBO_TIMEOUT&&comboCount>0)comboCount=0;
+      
+      if(gameActive&&now-lastSpawn>spawnInterval){spawnEnemy();lastSpawn=now;}
+      if(gameActive&&level>=3&&now-lastAsteroidSpawn>2000&&asteroids.length<8){const s=0.15+Math.random()*0.4;const m=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),new THREE.MeshStandardMaterial({color:0x888888,roughness:0.9}));m.position.set((Math.random()-0.5)*12,(Math.random()-0.5)*8,-20);m.userData={rot:new THREE.Vector3((Math.random()-0.5)*0.08,(Math.random()-0.5)*0.08,(Math.random()-0.5)*0.08),size:s};scene.add(m);asteroids.push({mesh:m,speed:0.05+Math.random()*0.08});lastAsteroidSpawn=now;}
+      if(gameActive&&now-lastCoinSpawn>3000&&coins_list.length<5){const c=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.05,16).rotateX(Math.PI/2),new THREE.MeshStandardMaterial({color:0xffd700,emissive:0x996600,emissiveIntensity:0.6,metalness:0.9}));c.position.set((Math.random()-0.5)*8,(Math.random()-0.5)*5,-15);c.userData={rotSpeed:0.1};scene.add(c);coins_list.push({mesh:c,speed:0.04});lastCoinSpawn=now;}
+      if(gameActive&&level>=6&&now-lastMedkitSpawn>10000&&medkits.length<2){const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,0.3),new THREE.MeshStandardMaterial({color:0xffffff})));g.add(new THREE.Mesh(new THREE.BoxGeometry(0.15,0.3,0.05),new THREE.MeshStandardMaterial({color:0xff2222,emissive:0x440000,emissiveIntensity:0.8})));g.add(new THREE.Mesh(new THREE.BoxGeometry(0.3,0.15,0.05),new THREE.MeshStandardMaterial({color:0xff2222,emissive:0x440000,emissiveIntensity:0.8})));g.position.set((Math.random()-0.5)*8,(Math.random()-0.5)*5,-15);scene.add(g);medkits.push({mesh:g,speed:0.03});lastMedkitSpawn=now;}
+      if(gameActive&&level>=DEV.shipsLevel&&enemyShips.length<DEV.maxShips&&Math.random()<DEV.shipChance){const s=new THREE.Group();s.add(new THREE.Mesh(new THREE.ConeGeometry(0.2,0.6,4).rotateX(Math.PI/2),new THREE.MeshStandardMaterial({color:0xff4444,emissive:0x440000,emissiveIntensity:0.6,metalness:0.5,roughness:0.4})));s.add(new THREE.Mesh(new THREE.BoxGeometry(0.5,0.06,0.15),new THREE.MeshStandardMaterial({color:0xdd3333})).translateZ(-0.08));s.position.set((Math.random()-0.5)*8,(Math.random()-0.5)*5,-12);s.rotation.z=Math.PI;scene.add(s);enemyShips.push({mesh:s,speed:0.04,health:2,lastShot:now,interval:2200});}
+      
+      if(armadaWaveActive&&armadaShipsRemaining>0){if(now-armadaSpawnTimer>(DEV.armadaWaveInterval||600)){spawnArmadaShip();armadaSpawnTimer=now;updateUI();}}
+      if(armadaWaveActive&&armadaShipsRemaining<=0&&armadaShips.length===0){endArmadaWave();}
+      
+      if(gameActive&&rockets<10&&now-lastRefill>5000){rockets++;updateUI();lastRefill=now;}
+      
+      for(let i=asteroids.length-1;i>=0;i--){const a=asteroids[i];a.mesh.position.z+=a.speed;if(a.mesh.position.distanceTo(shipGroup.position)<(a.mesh.userData.size||0.3)+0.5){damageShip(15);createExplosion(a.mesh.position.clone(),0x888888);scene.remove(a.mesh);asteroids.splice(i,1);}else if(a.mesh.position.z>8){scene.remove(a.mesh);asteroids.splice(i,1);}}
+      for(let i=coins_list.length-1;i>=0;i--){const c=coins_list[i];c.mesh.position.z+=c.speed;c.mesh.rotation.y+=c.mesh.userData.rotSpeed;if(c.mesh.position.distanceTo(shipGroup.position)<0.8){coins++;sfxCoin();scene.remove(c.mesh);coins_list.splice(i,1);updateUI();}else if(c.mesh.position.z>8){scene.remove(c.mesh);coins_list.splice(i,1);}}
+      for(let i=medkits.length-1;i>=0;i--){const m=medkits[i];m.mesh.position.z+=m.speed;m.mesh.rotation.y+=0.02;if(m.mesh.position.distanceTo(shipGroup.position)<0.8){health=Math.min(MAX_HEALTH,health+30);sfxHeal();showMessage('💚 +30 HP!',500);scene.remove(m.mesh);medkits.splice(i,1);updateUI();}else if(m.mesh.position.z>8){scene.remove(m.mesh);medkits.splice(i,1);}}
+      
+      for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];e.mesh.position.z+=e.speed;if(e.mesh.userData.rot){e.mesh.rotation.x+=e.mesh.userData.rot.x;e.mesh.rotation.y+=e.mesh.userData.rot.y;}if(e.mesh.position.distanceTo(shipGroup.position)<(e.mesh.userData.size||0.5)+0.6){damageShip(20);createExplosion(e.mesh.position.clone(),e.mesh.material.color);totalKills++;if(lockedEnemy===e)lockedEnemy=null;scene.remove(e.mesh);enemies.splice(i,1);}else if(e.mesh.position.z>8){scene.remove(e.mesh);enemies.splice(i,1);}}
+      for(let i=enemyShips.length-1;i>=0;i--){const s=enemyShips[i];s.mesh.position.z+=s.speed;s.mesh.position.x+=Math.sin(now*0.002+i)*0.03;if(s.mesh.position.distanceTo(shipGroup.position)<0.8){damageShip(25);createExplosion(s.mesh.position.clone());totalKills++;scene.remove(s.mesh);enemyShips.splice(i,1);}else if(s.mesh.position.z>5){scene.remove(s.mesh);enemyShips.splice(i,1);}else if(now-s.lastShot>s.interval&&enemyLasers.length<15){s.lastShot=now;const l=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.5,4).rotateX(Math.PI/2),new THREE.MeshBasicMaterial({color:0xff4444}));l.position.copy(s.mesh.position).z+=0.4;scene.add(l);enemyLasers.push({mesh:l,speed:0.3});}}
+      
+      for(let i=armadaShips.length-1;i>=0;i--){const s=armadaShips[i];s.mesh.position.z+=s.speed;s.mesh.position.x+=Math.sin(now*0.001+i)*0.02;s.mesh.position.y+=Math.cos(now*0.0015+i)*0.02;if(s.mesh.position.distanceTo(shipGroup.position)<0.7){damageShip(20+level*2);createExplosion(s.mesh.position.clone());totalKills++;scene.remove(s.mesh);armadaShips.splice(i,1);}else if(s.mesh.position.z>5){scene.remove(s.mesh);armadaShips.splice(i,1);}else if(now-s.lastShot>s.interval&&enemyLasers.length<20){s.lastShot=now;const l=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.6,4).rotateX(Math.PI/2),new THREE.MeshBasicMaterial({color:0xff6666}));const dir=new THREE.Vector3().copy(shipGroup.position).sub(s.mesh.position).normalize();l.position.copy(s.mesh.position).add(dir.clone().multiplyScalar(0.5));l.userData={dir};scene.add(l);enemyLasers.push({mesh:l,speed:0.35,dir});}}
+      
+      for(let i=enemyLasers.length-1;i>=0;i--){const l=enemyLasers[i];if(l.dir)l.mesh.position.add(l.dir.clone().multiplyScalar(l.speed));else l.mesh.position.z+=l.speed;if(l.mesh.position.distanceTo(shipGroup.position)<0.5){damageShip(12);scene.remove(l.mesh);enemyLasers.splice(i,1);}else if(l.mesh.position.z>10||l.mesh.position.z<-20){scene.remove(l.mesh);enemyLasers.splice(i,1);}}
+      
+      for(let i=lasers.length-1;i>=0;i--){const l=lasers[i];if(lockedEnemy?.mesh){const dir=new THREE.Vector3().copy(lockedEnemy.mesh.position).sub(l.mesh.position).normalize();l.mesh.position.add(dir.multiplyScalar(l.speed*1.5));}else l.mesh.position.z-=l.speed;let hit=false;const all=[...enemies,...enemyShips,...armadaShips];for(let j=all.length-1;j>=0;j--){const t=all[j];if(l.mesh.position.distanceTo(t.mesh.position)<0.7){hit=true;addScore(Math.floor((t.mesh.userData?.points||5)*(1+Math.min(comboCount,4)*0.3)),now);if(comboCount>=3){comboEl.textContent=`COMBO x${comboCount}!`;comboEl.classList.add('show');clearTimeout(comboTimer);comboTimer=setTimeout(()=>comboEl.classList.remove('show'),1000);if(comboCount>=4)showCoolComment();}createExplosion(t.mesh.position.clone(),getLaserColor());t.health=(t.health||1)-1;if(t.health<=0){scene.remove(t.mesh);if(enemies.includes(t))enemies.splice(enemies.indexOf(t),1);else if(enemyShips.includes(t))enemyShips.splice(enemyShips.indexOf(t),1);else if(armadaShips.includes(t))armadaShips.splice(armadaShips.indexOf(t),1);flashScreen(60);}break;}}if(hit||l.mesh.position.z<-20||l.mesh.position.z>10){scene.remove(l.mesh);lasers.splice(i,1);}}
+      for(let i=rockets_list.length-1;i>=0;i--){const r=rockets_list[i];if(r.target?.mesh){const dir=new THREE.Vector3().copy(r.target.mesh.position).sub(r.mesh.position).normalize();r.mesh.position.add(dir.multiplyScalar(r.speed));}else r.mesh.position.z-=r.speed;r.life-=0.016;let hit=false;const all=[...enemies,...enemyShips,...armadaShips];for(let j=all.length-1;j>=0;j--){const t=all[j];if(r.mesh.position.distanceTo(t.mesh.position)<0.8){hit=true;addScore(Math.floor((t.mesh.userData?.points||5)*(1+Math.min(comboCount,4)*0.5)*2),now);if(comboCount>=3){comboEl.textContent=`COMBO x${comboCount}!`;comboEl.classList.add('show');clearTimeout(comboTimer);comboTimer=setTimeout(()=>comboEl.classList.remove('show'),1000);if(comboCount>=4)showCoolComment();}createExplosion(t.mesh.position.clone(),0xff8800);t.health=(t.health||1)-2;if(t.health<=0){scene.remove(t.mesh);if(enemies.includes(t))enemies.splice(enemies.indexOf(t),1);else if(enemyShips.includes(t))enemyShips.splice(enemyShips.indexOf(t),1);else if(armadaShips.includes(t))armadaShips.splice(armadaShips.indexOf(t),1);flashScreen(80);}break;}}if(hit||r.life<=0||r.mesh.position.z<-20||r.mesh.position.z>10){if(!hit)createExplosion(r.mesh.position.clone(),0xff4444);scene.remove(r.mesh);rockets_list.splice(i,1);}}
+      
+      for(let i=explosions.length-1;i>=0;i--){const p=explosions[i];p.position.add(p.userData.vel);p.userData.vel.multiplyScalar(0.94);p.userData.life-=0.03;p.material.opacity=p.userData.life;if(p.userData.life<=0){scene.remove(p);explosions.splice(i,1);}}
+      if(explosions.length>MAX_PARTICLES){explosions.splice(0,explosions.length-MAX_PARTICLES).forEach(p=>scene.remove(p));}
+      if(!finalSceneActive){stars.position.z+=0.04;if(stars.position.z>10)stars.position.z=-15;}
+    }
+    
+    function animate(){requestAnimationFrame(animate);update();renderer.render(scene,camera);}
+    
+    updateUI();
+    document.getElementById('player-name-input').focus();
+    loadMusicFromSettings();
+    animate();
+    
+    window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+    
+    console.log('📊 Новые значения: Базовые очки: 50, Добавка: 30');
+    console.log('⚔️ Армады: 15/25/30/40 кораблей, Здоровье: 1/1/2/2');
+  </script>
+</body>
+</html>
