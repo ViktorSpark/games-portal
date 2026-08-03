@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Космическая аркада | Финал с салютом и маршем</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
@@ -12,6 +14,31 @@
       background: #000010;
       cursor: none;
     }
+    
+    #exitBtn {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      font-family: 'Russo One', 'Segoe UI', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #ffd9c9;
+      text-decoration: none;
+      white-space: nowrap;
+      background: linear-gradient(135deg, rgba(255,90,80,0.25), rgba(255,140,40,0.28));
+      border: 1px solid rgba(255,120,90,0.65);
+      border-radius: 10px;
+      padding: 7px 14px;
+      pointer-events: auto;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+      transition: transform .12s ease, box-shadow .2s ease;
+    }
+    #exitBtn:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 0 22px rgba(255,120,90,0.55); }
     
     #ui-layer {
       position: absolute;
@@ -56,7 +83,7 @@
     
     #coins-panel {
       position: absolute;
-      top: 20px;
+      top: 62px;
       left: 50%;
       transform: translateX(-50%);
       color: #ffd700;
@@ -573,6 +600,7 @@
   </style>
 </head>
 <body>
+  <a id="exitBtn" href="../../" title="Выйти в каталог игр">🚪 КАТАЛОГ ИГР</a>
   <div id="name-screen">
     <h1>🚀 КОСМИЧЕСКАЯ АРКАДА</h1>
     <p>Введите ваше имя, капитан</p>

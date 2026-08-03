@@ -36,7 +36,7 @@ html, body {
   min-height: 100vh;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 14px; padding: 18px 12px 30px;
+  gap: 14px; padding: 60px 12px 30px;
 }
 
 h1 {
@@ -108,12 +108,30 @@ h1 {
 
 .btn.small { padding: 7px 12px; font-size: 13px; border-radius: 10px; }
 
-.btn.exit {
-  background: linear-gradient(135deg, rgba(255,90,80,0.24), rgba(255,140,40,0.26));
-  border-color: rgba(255,120,90,0.6);
+#exitBtn {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  font-family: 'Russo One', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
   color: #ffd9c9;
+  text-decoration: none;
+  white-space: nowrap;
+  background: linear-gradient(135deg, rgba(255,90,80,0.25), rgba(255,140,40,0.28));
+  border: 1px solid rgba(255,120,90,0.65);
+  border-radius: 10px;
+  padding: 7px 14px;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+  transition: transform .12s ease, box-shadow .2s ease;
 }
-.btn.exit:hover { box-shadow: 0 0 22px rgba(255,120,90,0.5); }
+#exitBtn:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 0 22px rgba(255,120,90,0.55); }
 
 .hud-top {
   display: flex;
@@ -121,8 +139,6 @@ h1 {
   justify-content: space-between;
   gap: 10px;
   width: min(96vw, 960px);
-  position: relative;
-  z-index: 60;
 }
 
 .hud-top .btn { flex-shrink: 0; }
@@ -325,6 +341,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
 </style>
 </head>
 <body>
+<a id="exitBtn" href="../../" title="Выйти в каталог игр">🚪 КАТАЛОГ ИГР</a>
 <canvas id="starfield"></canvas>
 
 <div class="page">
@@ -336,7 +353,6 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
       <button class="btn small" id="btnMusic" title="Музыка вкл/выкл (M)">🎵 ВКЛ</button>
       <button class="btn small" id="btnSfx" title="Звуки вкл/выкл (Q)">🔊</button>
       <button class="btn small" id="btnHelpTop" title="Инструкция (H)">❓ Инструкция</button>
-      <button class="btn small exit" id="btnExit" title="Выйти в каталог игр">🚪 КАТАЛОГ</button>
     </div>
   </div>
 
@@ -1593,13 +1609,6 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     $('btnPauseHelp').addEventListener('click', () => $('helpOverlay').classList.remove('hidden'));
     $('btnHelpTop').addEventListener('click', () => $('helpOverlay').classList.remove('hidden'));
     $('btnHelpClose').addEventListener('click', () => { $('helpOverlay').classList.add('hidden'); sfxClick(); });
-
-    $('btnExit').addEventListener('click', () => {
-      sfxClick();
-      const parts = window.location.pathname.split('/').filter(Boolean);
-      parts.length = Math.max(1, parts.length - 2);
-      window.location.href = '/' + parts.join('/') + '/';
-    });
 
     $('btnResume').addEventListener('click', () => {
       gameState = 'fight';
