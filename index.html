@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Галактика Игр — коллекция бесплатных браузерных игр: тетрис и другие аркады. Играй онлайн бесплатно.">
+<title>Галактика Игр — коллекция браузерных игр</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Russo+One&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cyan: #4de1ff;
+  --purple: #b14bff;
+  --pink: #ff5ecb;
+  --gold: #ffd500;
+  --panel: rgba(10, 14, 34, 0.72);
+  --border: rgba(120, 140, 255, 0.28);
+  --text: #e8ecff;
+  --dim: #9aa4d6;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  min-height: 100vh;
+  background: #05060f;
+  color: var(--text);
+  font-family: 'Russo One', 'Segoe UI', Arial, sans-serif;
+}
+
+#starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+.nebula {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(900px 700px at 12% 18%, rgba(177, 75, 255, 0.16), transparent 60%),
+    radial-gradient(1000px 800px at 88% 12%, rgba(0, 180, 255, 0.14), transparent 60%),
+    radial-gradient(1100px 900px at 78% 88%, rgba(255, 94, 203, 0.12), transparent 60%);
+}
+
+.page {
+  position: relative; z-index: 1;
+  max-width: 1080px; margin: 0 auto;
+  padding: 20px 18px 40px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+header { text-align: center; padding: 24px 0 6px; }
+
+h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 900;
+  letter-spacing: 4px;
+  background: linear-gradient(100deg, var(--cyan), var(--purple), var(--pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 40px rgba(177, 75, 255, 0.4);
+}
+
+.tagline { color: var(--dim); margin-top: 8px; font-size: 15px; letter-spacing: 1px; }
+
+.ad-slot {
+  position: relative;
+  border: 1px dashed rgba(255, 213, 0, 0.35);
+  border-radius: 12px;
+  background: rgba(20, 24, 48, 0.5);
+  overflow: hidden;
+  text-align: center;
+}
+
+.ad-slot.top { min-height: 90px; }
+.ad-slot.infeed { min-height: 120px; margin: 6px 0; }
+.ad-slot.bottom { min-height: 90px; }
+
+.ad-label {
+  position: absolute; top: 6px; left: 8px;
+  font-size: 9px; letter-spacing: 2px; color: rgba(255,213,0,0.6);
+}
+
+.ad-placeholder {
+  height: 100%; min-height: inherit;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--dim); font-size: 12px; letter-spacing: 1px; gap: 2px;
+  padding: 22px 10px;
+}
+
+.ad-placeholder b { color: rgba(255,213,0,0.8); font-size: 13px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  position: relative;
+  display: flex; flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--text);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 30px rgba(0,0,0,0.45);
+  transition: transform .18s ease, box-shadow .25s ease, border-color .25s ease;
+}
+
+.card.playable:hover {
+  transform: translateY(-6px);
+  border-color: rgba(77, 225, 255, 0.7);
+  box-shadow: 0 8px 40px rgba(77, 225, 255, 0.25), 0 0 80px rgba(177, 75, 255, 0.15);
+}
+
+.card .preview {
+  height: 130px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 56px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(77,225,255,0.15), transparent 60%),
+    radial-gradient(circle at 75% 75%, rgba(177,75,255,0.2), transparent 60%),
+    linear-gradient(160deg, rgba(14,18,42,0.9), rgba(6,8,22,0.9));
+}
+
+.card .preview.neon {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(77,225,255,0.25), transparent 60%),
+    radial-gradient(circle at 75% 75%, rgba(177,75,255,0.3), transparent 60%),
+    linear-gradient(160deg, rgba(14,18,42,0.9), rgba(6,8,22,0.9));
+  filter: drop-shadow(0 0 14px rgba(77,225,255,0.5));
+}
+
+.card .info { padding: 14px 16px 18px; }
+
+.card .name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 17px; letter-spacing: 1px;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+
+.card .desc { font-size: 12px; color: var(--dim); line-height: 1.6; }
+
+.card .play-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  color: #071018;
+  box-shadow: 0 0 18px rgba(77,225,255,0.35);
+}
+
+.card .badge {
+  position: absolute; top: 10px; right: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px; letter-spacing: 2px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255,213,0,0.15);
+  border: 1px solid rgba(255,213,0,0.5);
+  color: var(--gold);
+}
+
+.card .badge.soon {
+  background: rgba(154,164,214,0.12);
+  border-color: rgba(154,164,214,0.4);
+  color: var(--dim);
+}
+
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px; letter-spacing: 3px;
+  color: var(--dim);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+footer {
+  text-align: center;
+  color: var(--dim);
+  font-size: 12px;
+  letter-spacing: 1px;
+  opacity: .8;
+}
+
+@media (max-width: 560px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .card .preview { height: 100px; font-size: 42px; }
+}
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div class="nebula"></div>
+
+<div class="page">
+  <header>
+    <h1>ГАЛАКТИКА ИГР</h1>
+    <div class="tagline">Бесплатные браузерные игры · Играй онлайн прямо сейчас</div>
+  </header>
+
+  <div class="ad-slot top">
+    <span class="ad-label">РЕКЛАМА</span>
+    <div class="ad-placeholder">
+      <b>Место для баннера 970×90 / 728×90</b>
+      РСЯ или AdSense — код вставляется здесь
+    </div>
+  </div>
+
+  <div class="grid">
+    <a class="card playable" href="games/tetris/">
+      <span class="badge">ИГРАТЬ</span>
+      <div class="preview neon">🧩</div>
+      <div class="info">
+        <div class="name">КОСМИЧЕСКИЙ ТЕТРИС</div>
+        <div class="desc">Собирай линии, ускоряйся в 10 раундах, бей рекорды на фоне звёзд.</div>
+        <span class="play-btn">▶ ИГРАТЬ</span>
+      </div>
+    </a>
+
+    <div class="card" aria-disabled="true">
+      <span class="badge soon">СКОРО</span>
+      <div class="preview">🐍</div>
+      <div class="info">
+        <div class="name" style="color:var(--dim)">КОСМИЧЕСКАЯ ЗМЕЙКА</div>
+        <div class="desc">Скоро здесь появится новая игра коллекции.</div>
+      </div>
+    </div>
+
+    <div class="card" aria-disabled="true">
+      <span class="badge soon">СКОРО</span>
+      <div class="preview">🧠</div>
+      <div class="info">
+        <div class="name" style="color:var(--dim)">ГАЛАКТИЧЕСКАЯ ПАМЯТЬ</div>
+        <div class="desc">Скоро здесь появится новая игра коллекции.</div>
+      </div>
+    </div>
+
+    <div class="card" aria-disabled="true">
+      <span class="badge soon">СКОРО</span>
+      <div class="preview">💥</div>
+      <div class="info">
+        <div class="name" style="color:var(--dim)">АСТРО-ШУТЕР</div>
+        <div class="desc">Скоро здесь появится новая игра коллекции.</div>
+      </div>
+    </div>
+
+    <div class="card" aria-disabled="true">
+      <span class="badge soon">СКОРО</span>
+      <div class="preview">🔢</div>
+      <div class="info">
+        <div class="name" style="color:var(--dim)">КОСМИЧЕСКОЕ 2048</div>
+        <div class="desc">Скоро здесь появится новая игра коллекции.</div>
+      </div>
+    </div>
+
+    <div class="card" aria-disabled="true">
+      <span class="badge soon">СКОРО</span>
+      <div class="preview">💣</div>
+      <div class="info">
+        <div class="name" style="color:var(--dim)">САПЁР НА ПЛАНЕТАХ</div>
+        <div class="desc">Скоро здесь появится новая игра коллекции.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ad-slot infeed">
+    <span class="ad-label">РЕКЛАМА</span>
+    <div class="ad-placeholder">
+      <b>Место для рекламного блока между играми</b>
+      РСЯ или AdSense — код вставляется здесь
+    </div>
+  </div>
+
+  <div class="section-title">— Новые игры выходят регулярно —</div>
+
+  <div class="ad-slot bottom">
+    <span class="ad-label">РЕКЛАМА</span>
+    <div class="ad-placeholder">
+      <b>Место для баннера 970×90</b>
+      РСЯ или AdSense — код вставляется здесь
+    </div>
+  </div>
+
+  <footer>© Галактика Игр · Коллекция браузерных игр</footer>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('starfield');
+  const c = cv.getContext('2d');
+  let stars = [];
+  function resize() {
+    cv.width = window.innerWidth;
+    cv.height = window.innerHeight;
+    stars = [];
+    const count = Math.floor(cv.width * cv.height / 4200);
+    for (let i = 0; i < count; i++) stars.push({
+      x: Math.random() * cv.width,
+      y: Math.random() * cv.height,
+      r: Math.random() * 1.6 + 0.3,
+      base: Math.random() * 0.55 + 0.25,
+      speed: Math.random() * 0.018 + 0.004,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+  function draw(t) {
+    c.clearRect(0, 0, cv.width, cv.height);
+    for (const s of stars) {
+      const a = s.base + Math.sin(t * s.speed + s.phase) * 0.3;
+      c.globalAlpha = Math.max(0.05, a);
+      c.fillStyle = '#ffffff';
+      c.beginPath();
+      c.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
