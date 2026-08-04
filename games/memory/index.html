@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Галактическая Память — бесплатная игра на память: найди все пары космических карт. Играй онлайн.">
+<title>Галактическая Память — игра на память</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Russo+One&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cyan: #4de1ff; --purple: #b14bff; --pink: #ff5ecb; --gold: #ffd500;
+  --panel: rgba(10, 14, 34, 0.85); --border: rgba(120, 140, 255, 0.4);
+  --text: #e8ecff; --dim: #9aa4d6;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { min-height: 100vh; background: #05060f; color: var(--text); font-family: 'Russo One', 'Segoe UI', Arial, sans-serif; }
+#starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.nebula {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(900px 700px at 12% 18%, rgba(177, 75, 255, 0.16), transparent 60%),
+    radial-gradient(1000px 800px at 88% 12%, rgba(0, 180, 255, 0.14), transparent 60%),
+    radial-gradient(1100px 900px at 78% 88%, rgba(255, 94, 203, 0.12), transparent 60%);
+}
+body { position: relative; }
+
+#exitBtn {
+  position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 999; font-family: 'Russo One', sans-serif; font-size: 13px; font-weight: 700;
+  letter-spacing: 1px; color: #ffd9c9; text-decoration: none; white-space: nowrap;
+  background: linear-gradient(135deg, rgba(255,90,80,0.25), rgba(255,140,40,0.28));
+  border: 1px solid rgba(255,120,90,0.65); border-radius: 10px; padding: 7px 14px;
+  pointer-events: auto; cursor: pointer; user-select: none;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.4); transition: transform .12s ease, box-shadow .2s ease;
+}
+#exitBtn:hover { transform: translateX(-50%) translateY(-2px); box-shadow: 0 0 22px rgba(255,120,90,0.55); }
+
+.page {
+  position: relative; z-index: 1; min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 60px 12px 30px;
+}
+h1 {
+  font-family: 'Orbitron', sans-serif; font-size: clamp(20px, 3.2vw, 34px); font-weight: 900;
+  letter-spacing: 3px; text-align: center;
+  background: linear-gradient(100deg, var(--cyan), var(--purple), var(--pink));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 0 30px rgba(177, 75, 255, 0.35);
+}
+.levels { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.btn.small { padding: 7px 14px; font-size: 13px; border-radius: 10px; }
+.btn.small.active { background: linear-gradient(135deg, var(--cyan), var(--purple)); color: #071018; border-color: transparent; }
+
+.hud { display: flex; gap: 18px; justify-content: center; align-items: center; width: min(94vw, 480px); flex-wrap: wrap; }
+.stat-line { display: flex; gap: 8px; align-items: center; font-size: 15px; letter-spacing: 1px; color: var(--dim); }
+.stat-line b { font-family: 'Orbitron', sans-serif; color: var(--cyan); font-size: 18px; }
+.stat-line .gold { color: var(--gold); }
+
+.board-wrap { width: min(94vw, 480px); border-radius: 16px; border: 1px solid var(--border); background: rgba(6,9,24,0.9); padding: 10px; box-shadow: 0 0 40px rgba(77,225,255,0.1); }
+.board { display: grid; gap: 8px; }
+
+.card {
+  position: relative; aspect-ratio: 1; border-radius: 12px; cursor: pointer;
+  perspective: 600px; user-select: none;
+}
+.card-inner {
+  position: absolute; inset: 0; border-radius: 12px;
+  transition: transform .28s ease; transform-style: preserve-3d;
+}
+.card.flipped .card-inner { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; inset: 0; border-radius: 12px;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px;
+}
+.card-front {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(77,225,255,0.18), transparent 60%),
+    radial-gradient(circle at 75% 80%, rgba(177,75,255,0.22), transparent 60%),
+    rgba(14,18,42,0.95);
+  border: 1px solid rgba(120,140,255,0.4);
+}
+.card-front::after { content: '?'; font-family: 'Orbitron', sans-serif; color: rgba(77,225,255,0.5); font-size: 20px; }
+.card-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(160deg, rgba(77,225,255,0.35), rgba(177,75,255,0.4));
+  border: 1px solid rgba(77,225,255,0.6);
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+}
+.card.matched .card-back { background: linear-gradient(160deg, rgba(57,255,107,0.3), rgba(77,225,255,0.3)); border-color: rgba(57,255,107,0.5); }
+
+.ad-slot {
+  position: relative; border: 1px dashed rgba(255,213,0,0.35); border-radius: 12px;
+  background: rgba(20,24,48,0.5); overflow: hidden; text-align: center;
+  width: min(94vw, 480px); min-height: 70px;
+}
+.ad-label { position: absolute; top: 5px; left: 8px; font-size: 9px; letter-spacing: 2px; color: rgba(255,213,0,0.6); }
+.ad-placeholder { height: 100%; min-height: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--dim); font-size: 12px; letter-spacing: 1px; gap: 2px; padding: 18px 10px; }
+.ad-placeholder b { color: rgba(255,213,0,0.8); font-size: 13px; }
+
+.btn {
+  font-family: 'Russo One', sans-serif; font-size: 15px; letter-spacing: 1px; color: var(--text);
+  background: linear-gradient(135deg, rgba(77,225,255,0.18), rgba(177,75,255,0.22));
+  border: 1px solid rgba(120,140,255,0.45); border-radius: 12px; padding: 10px 20px;
+  cursor: pointer; transition: transform .12s ease, box-shadow .2s ease; user-select: none;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(77,225,255,0.45); }
+.btn:active { transform: translateY(0); }
+.btn.primary { background: linear-gradient(135deg, var(--cyan), var(--purple)); border: none; color: #071018; box-shadow: 0 0 26px rgba(77,225,255,0.4); }
+
+.overlay {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(3,4,12,0.88); backdrop-filter: blur(6px); padding: 16px;
+}
+.overlay.hidden { display: none; }
+.overlay-card {
+  width: min(92vw, 420px); background: var(--panel); border: 1px solid var(--border);
+  border-radius: 20px; padding: 24px; text-align: center; box-shadow: 0 0 60px rgba(0,0,0,0.6);
+}
+.overlay-card h2 { font-family: 'Orbitron', sans-serif; font-size: 22px; letter-spacing: 2px; margin-bottom: 8px; color: var(--cyan); }
+.overlay-card p { color: var(--dim); font-size: 14px; margin-bottom: 16px; }
+.overlay-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.final-score { font-family: 'Orbitron', sans-serif; font-size: 34px; color: var(--gold); }
+.records { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+.records td { padding: 6px 8px; text-align: center; border-bottom: 1px solid rgba(120,140,255,0.15); color: var(--dim); }
+.records td:first-child { font-family: 'Orbitron', sans-serif; color: var(--gold); }
+.controls-note { text-align: left; font-size: 13px; line-height: 2; color: var(--dim); }
+.controls-note b { color: var(--cyan); }
+footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<a id="exitBtn" href="../../" title="Выйти в каталог игр">🚪 КАТАЛОГ ИГР</a>
+<canvas id="starfield"></canvas>
+<div class="nebula"></div>
+
+<div class="page">
+  <h1>🧠 ГАЛАКТИЧЕСКАЯ ПАМЯТЬ</h1>
+
+  <div class="levels">
+    <button class="btn small active" data-lvl="easy">🟢 4×3</button>
+    <button class="btn small" data-lvl="medium">🟡 6×4</button>
+    <button class="btn small" data-lvl="hard">🔴 8×4</button>
+  </div>
+
+  <div class="hud">
+    <div class="stat-line"><span>ХОДЫ</span><b id="moves">0</b></div>
+    <div class="stat-line"><span>ПАРЫ</span><b id="pairs">0 / 0</b></div>
+    <div class="stat-line"><span>ЛУЧШЕЕ</span><b class="gold" id="best">—</b></div>
+  </div>
+
+  <div class="ad-slot top">
+    <span class="ad-label">РЕКЛАМА</span>
+    <div class="ad-placeholder"><b>Место для баннера 728×90</b>РСЯ или AdSense — код вставляется здесь</div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <footer>ЗАПОМНИ КАРТЫ · НАЙДИ ВСЕ ПАРЫ</footer>
+
+  <div class="ad-slot bottom">
+    <span class="ad-label">РЕКЛАМА</span>
+    <div class="ad-placeholder"><b>Место для баннера 728×90</b>РСЯ или AdSense — код вставляется здесь</div>
+  </div>
+</div>
+
+<div class="overlay" id="startOverlay">
+  <div class="overlay-card">
+    <h2>🧠 ГАЛАКТИЧЕСКАЯ ПАМЯТЬ</h2>
+    <p>Открывай карты и находи одинаковые пары. Чем меньше ходов — тем лучше результат!</p>
+    <div class="controls-note">
+      <b>Тап по карте</b> — открыть<br>
+      <b>Найди пары</b> — и они исчезнут
+    </div>
+    <div class="records" id="startRecords"></div>
+    <div class="overlay-actions">
+      <button class="btn primary" id="btnStart">🚀 ИГРАТЬ</button>
+      <button class="btn" id="btnHelp">❓ Помощь</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="winOverlay">
+  <div class="overlay-card">
+    <h2>ПОБЕДА!</h2>
+    <p>Все пары найдены</p>
+    <div class="final-score" id="winMoves">0 ходов</div>
+    <div class="records" id="winRecords"></div>
+    <div class="overlay-actions">
+      <button class="btn primary" id="btnWinAgain">🔄 ЕЩЁ РАЗ</button>
+      <button class="btn" id="btnWinStart">🏠 В МЕНЮ</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="helpOverlay">
+  <div class="overlay-card">
+    <h2>ПОМОЩЬ</h2>
+    <div class="controls-note">
+      <b>Тап по карте</b> — перевернуть карту<br>
+      <b>Пары</b> — две одинаковые карты исчезают<br>
+      <b>Сложность</b> — больше карт, сложнее запомнить
+    </div>
+    <p>Цель — найти все пары за минимальное число ходов.</p>
+    <div class="overlay-actions">
+      <button class="btn primary" id="btnHelpClose">ПОНЯТНО</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const SYMBOLS = ['🪐','🚀','🛸','🌙','☄️','🛰️','👽','🌟','✨','💫','🌌','🔭','🧪','⚡','🔥','💎','🌈','🦄'];
+  const levels = {
+    easy:   { rows: 3, cols: 4 },
+    medium: { rows: 4, cols: 6 },
+    hard:   { rows: 4, cols: 8 }
+  };
+  const storeKey = 'memory_best';
+  let best = {};
+  try { best = JSON.parse(localStorage.getItem(storeKey) || '{}'); } catch (e) {}
+
+  let lvl = 'easy', cards = [], moves = 0, pairsFound = 0, totalPairs = 0;
+  let opened = [], lock = false;
+
+  function updateBestView() {
+    const b = best[lvl];
+    $('best').textContent = b ? b + ' ход' : '—';
+  }
+  function newBoard() {
+    const cfg = levels[lvl];
+    const n = cfg.rows * cfg.cols;
+    const pairs = n / 2;
+    totalPairs = pairs;
+    const symbols = SYMBOLS.slice(0, pairs);
+    const deck = [...symbols, ...symbols].sort(() => Math.random() - 0.5);
+    cards = deck.map(s => ({ s, open:false, matched:false }));
+    moves = 0; pairsFound = 0; opened = []; lock = false;
+    renderBoard();
+    updateHud();
+  }
+  function renderBoard() {
+    const b = $('board');
+    const cfg = levels[lvl];
+    b.style.gridTemplateColumns = `repeat(${cfg.cols}, 1fr)`;
+    b.innerHTML = '';
+    cards.forEach((card, i) => {
+      const d = document.createElement('div');
+      d.className = 'card' + (card.matched ? ' matched' : '');
+      d.innerHTML = `<div class="card-inner"><div class="card-face card-front"></div><div class="card-face card-back">${card.s}</div></div>`;
+      d.addEventListener('click', () => clickCard(i, d));
+      b.appendChild(d);
+    });
+  }
+  function clickCard(i, el) {
+    if (lock) return;
+    if (cards[i].open || cards[i].matched) return;
+    cards[i].open = true;
+    el.classList.add('flipped');
+    opened.push(i);
+    sfxFlip();
+    if (opened.length === 2) {
+      moves++;
+      const [a, b] = opened;
+      updateHud();
+      if (cards[a].s === cards[b].s) {
+        cards[a].matched = true; cards[b].matched = true;
+        pairsFound++;
+        sfxMatch();
+        opened = [];
+        renderBoard();
+        updateHud();
+        if (pairsFound === totalPairs) win();
+      } else {
+        lock = true;
+        sfxMiss();
+        setTimeout(() => {
+          cards[a].open = false; cards[b].open = false;
+          const els = document.querySelectorAll('.card');
+          els[a].classList.remove('flipped');
+          els[b].classList.remove('flipped');
+          opened = []; lock = false;
+        }, 700);
+      }
+    }
+  }
+  function updateHud() {
+    $('moves').textContent = moves;
+    $('pairs').textContent = pairsFound + ' / ' + totalPairs;
+    const b = best[lvl];
+    if (b && moves > 0 && moves >= b) {}
+  }
+  function win() {
+    sfxWin();
+    $('winMoves').textContent = moves + ' ход' + (moves % 10 === 1 && moves % 100 !== 11 ? '' : 'ов');
+    if (!best[lvl] || moves < best[lvl]) {
+      best[lvl] = moves;
+      try { localStorage.setItem(storeKey, JSON.stringify(best)); } catch (e) {}
+      updateBestView();
+    }
+    saveRecord(lvl, moves);
+    renderRecords('winRecords');
+    setTimeout(() => $('winOverlay').classList.remove('hidden'), 400);
+  }
+
+  let records = [];
+  try { records = JSON.parse(localStorage.getItem('memory_records') || '[]'); } catch (e) {}
+  function saveRecord(level, m) {
+    records.push({ name: 'Аноним', level, m, d: Date.now() });
+    records.sort((a,b) => a.m - b.m);
+    records = records.slice(0, 8);
+    try { localStorage.setItem('memory_records', JSON.stringify(records)); } catch (e) {}
+  }
+  function renderRecords(where) {
+    const el = $(where);
+    const list = records.slice(0, 5);
+    if (!list.length) { el.innerHTML = '<div style="padding:8px;color:var(--dim)">— рекордов пока нет —</div>'; return; }
+    el.innerHTML = list.map(r => `<tr><td>${r.m}</td><td>${levelName(r.level)}</td></tr>`).join('');
+  }
+  function levelName(l) { return {easy:'4×3', medium:'6×4', hard:'8×4'}[l] || l; }
+
+  // ---------- audio ----------
+  let audioCtx = null;
+  function beep(freq, dur, type, vol) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type || 'square'; o.frequency.value = freq;
+      g.gain.setValueAtTime(vol || 0.05, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (dur||0.1)/1000);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + (dur||0.1)/1000);
+    } catch (e) {}
+  }
+  function sfxFlip(){ beep(420, 50, 'square', 0.03); }
+  function sfxMatch(){ beep(600, 90, 'square'); setTimeout(()=>beep(800, 100, 'square'), 80); }
+  function sfxMiss(){ beep(220, 100, 'square', 0.04); }
+  function sfxWin(){ [523, 659, 784, 1047].forEach((f,i)=>setTimeout(()=>beep(f, 130, 'square'), i*110)); }
+  function sfxClick(){ beep(440, 50, 'square', 0.03); }
+
+  // ---------- buttons ----------
+  document.querySelectorAll('.levels .btn').forEach(b => {
+    b.addEventListener('click', () => {
+      sfxClick();
+      document.querySelectorAll('.levels .btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      lvl = b.dataset.lvl;
+      updateBestView();
+      newBoard();
+    });
+  });
+  $('btnStart').addEventListener('click', () => { sfxClick(); $('startOverlay').classList.add('hidden'); newBoard(); });
+  $('btnWinAgain').addEventListener('click', () => { sfxClick(); $('winOverlay').classList.add('hidden'); newBoard(); });
+  $('btnWinStart').addEventListener('click', () => {
+    sfxClick(); $('winOverlay').classList.add('hidden');
+    renderRecords('startRecords'); $('startOverlay').classList.remove('hidden');
+  });
+  $('btnHelp').addEventListener('click', () => $('helpOverlay').classList.remove('hidden'));
+  $('btnHelpClose').addEventListener('click', () => { $('helpOverlay').classList.add('hidden'); sfxClick(); });
+
+  updateBestView();
+  renderRecords('startRecords');
+  newBoard();
+
+  // ---------- starfield ----------
+  const sf = document.getElementById('starfield');
+  const sc = sf.getContext('2d');
+  let stars = [];
+  function resize() {
+    sf.width = window.innerWidth; sf.height = window.innerHeight; stars = [];
+    const count = Math.floor(sf.width * sf.height / 4200);
+    for (let i=0;i<count;i++) stars.push({ x:Math.random()*sf.width, y:Math.random()*sf.height, r:Math.random()*1.6+0.3, base:Math.random()*0.55+0.25, speed:Math.random()*0.018+0.004, phase:Math.random()*Math.PI*2 });
+  }
+  function drawStars(t) {
+    sc.clearRect(0,0,sf.width,sf.height);
+    for (const s of stars) { const a = s.base + Math.sin(t*s.speed + s.phase)*0.3; sc.globalAlpha = Math.max(0.05, a); sc.fillStyle='#fff'; sc.beginPath(); sc.arc(s.x,s.y,s.r,0,Math.PI*2); sc.fill(); }
+    sc.globalAlpha = 1;
+    requestAnimationFrame(drawStars);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(drawStars);
+
+  window.__memory = { newBoard, clickCard, get moves() { return moves; }, get pairsFound() { return pairsFound; }, get totalPairs() { return totalPairs; } };
+})();
+</script>
+</body>
+</html>
