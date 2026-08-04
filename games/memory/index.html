@@ -90,6 +90,7 @@ h1 {
   box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
 }
 .card.matched .card-back { background: linear-gradient(160deg, rgba(57,255,107,0.3), rgba(77,225,255,0.3)); border-color: rgba(57,255,107,0.5); }
+.card.gone { opacity: 0; pointer-events: none; transition: opacity .45s ease .25s; }
 
 .ad-slot {
   position: relative; border: 1px dashed rgba(255,213,0,0.35); border-radius: 12px;
@@ -252,7 +253,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     b.innerHTML = '';
     cards.forEach((card, i) => {
       const d = document.createElement('div');
-      d.className = 'card' + (card.matched ? ' matched' : '');
+      d.className = 'card' + (card.matched ? ' flipped matched gone' : '');
       d.innerHTML = `<div class="card-inner"><div class="card-face card-front"></div><div class="card-face card-back">${card.s}</div></div>`;
       d.addEventListener('click', () => clickCard(i, d));
       b.appendChild(d);

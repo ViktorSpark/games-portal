@@ -668,7 +668,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   };
   document.addEventListener('keydown', e => {
     if (gameState === 'menu' || gameState === 'over') return;
-    if (e.key === ' ' || e.key === 'p' || e.key === 'P' || e.key === 'з' || e.key === 'З') { togglePause(); e.preventDefault(); return; }
+    if (e.key === 'p' || e.key === 'P' || e.key === 'з' || e.key === 'З') { togglePause(); e.preventDefault(); return; }
     if (e.key === 'h' || e.key === 'H' || e.key === 'р' || e.key === 'Р') { $('helpOverlay').classList.remove('hidden'); return; }
     if (e.key === ' ') { keys.add(' '); return; }
     const k = keyMap[e.key];
@@ -727,6 +727,15 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   window.addEventListener('resize', resize);
   resize();
   requestAnimationFrame(drawStars);
+
+  window.__shooter = {
+    newGame, togglePause, update,
+    get gameState() { return gameState; },
+    get bullets() { return bullets; },
+    get player() { return player; },
+    get keys() { return keys; },
+    get wave() { return wave; }
+  };
 })();
 </script>
 </body>
