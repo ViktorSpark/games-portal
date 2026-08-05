@@ -237,7 +237,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   try { records = JSON.parse(localStorage.getItem('shooter_records') || '[]'); } catch (e) {}
 
   function resetPlayer() {
-    player = { x: W/2, y: H-70, w: 26, h: 30, lives: 3, weapon: 1, shield: 0, fireRate: 105, fireCd: 0, combo: 0, comboT: 0 };
+    player = { x: W/2, y: H-70, w: 26, h: 30, lives: 3, weapon: 1, shield: 0, fireRate: 52, fireCd: 0, combo: 0, comboT: 0 };
   }
 
   function newGame() {
@@ -265,13 +265,13 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     bannerT = 110;
   }
   function spawnWave() {
-    const n = Math.min(4 + wave, 14);
+    const n = Math.min(2 + wave, 7);
     const isBossWave = wave % 5 === 0;
     if (isBossWave) {
       enemies.push({ x: W/2, y: -80, w: 90, h: 90, hp: 60 + wave*15, maxHp: 60 + wave*15, type: 'boss', vy: 0, fireT: 0, phase: 0, score: 1000 });
       return;
     }
-    const rows = Math.min(3, 1 + Math.floor(wave/2));
+    const rows = Math.min(2, 1 + Math.floor(wave/3));
     for (let i = 0; i < n; i++) {
       const type = Math.random() < 0.25 ? 'fast' : Math.random() < 0.5 ? 'tank' : 'basic';
       const cfg = { basic:{hp:2, w:34, h:26, vy:1.2, score:100, shoot:0.006},
@@ -459,7 +459,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   function applyPowerup(t) {
     if (t === 'weapon') {
       player.weapon = Math.min(5, player.weapon + 1);
-      player.fireRate = Math.max(60, 120 - player.weapon * 12);
+      player.fireRate = Math.max(32, 52 - player.weapon * 4);
       addFloat(player.x, player.y-20, '⬆ ОРУЖИЕ ' + player.weapon + '!', '#57ff8f');
       sfxPower();
     } else if (t === 'shield') {
@@ -501,7 +501,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     saveScore();
     renderRecords('gameOverRecords');
     $('gameOverOverlay').classList.remove('hidden');
-    if (window.Galaxy) Galaxy.reportWin('shooter');
+    if (window.Galaxy) { Galaxy.setResult('очков: ' + score + ', волна ' + wave); Galaxy.reportWin('shooter'); }
   }
   function saveScore() {
     records.push({ name: 'Аноним', score, wave, d: Date.now() });
@@ -749,12 +749,14 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   requestAnimationFrame(drawStars);
 
   window.__shooter = {
-    newGame, togglePause, update, firePlayer, comboMult, applyPowerup,
+    newGame, togglePause, update, firePlayer, comboMult, applyPowerup, spawnWave,
     get gameState() { return gameState; },
     get bullets() { return bullets; },
+    get enemies() { return enemies; },
     get player() { return player; },
     get keys() { return keys; },
-    get wave() { return wave; }
+    get wave() { return wave; },
+    set wave(v) { wave = v; }
   };
 })();
 </script>

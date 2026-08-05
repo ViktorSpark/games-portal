@@ -300,7 +300,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   }
   function win() {
     sfxWin();
-    if (window.Galaxy) Galaxy.reportWin('memory');
+    if (window.Galaxy) { Galaxy.setResult('победа за ' + moves + ' ходов'); Galaxy.reportWin('memory'); }
     $('winMoves').textContent = moves + ' ход' + (moves % 10 === 1 && moves % 100 !== 11 ? '' : 'ов');
     if (!best[lvl] || moves < best[lvl]) {
       best[lvl] = moves;

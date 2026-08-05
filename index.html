@@ -181,6 +181,55 @@ h1 {
   color: var(--dim);
 }
 
+.card.locked { cursor: pointer; opacity: .85; }
+.card.locked .preview { filter: grayscale(.5); }
+.card.locked:hover { transform: translateY(-4px); border-color: rgba(255,213,0,0.6); box-shadow: 0 8px 40px rgba(255,213,0,0.12); }
+.card.locked .play-btn {
+  background: linear-gradient(135deg, rgba(255,213,0,0.9), rgba(255,120,40,0.9));
+  color: #141018;
+}
+
+.locked-note {
+  text-align: center; color: var(--gold); font-size: 13px; letter-spacing: 1px;
+  background: rgba(255,213,0,0.08); border: 1px dashed rgba(255,213,0,0.45);
+  border-radius: 12px; padding: 10px 14px; margin-top: -6px;
+}
+
+.overlay {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(3,4,12,0.9); backdrop-filter: blur(6px); padding: 16px;
+}
+.overlay.hidden { display: none; }
+.overlay-card {
+  width: min(92vw, 400px); background: var(--panel); border: 1px solid var(--border);
+  border-radius: 18px; padding: 22px; text-align: center; box-shadow: 0 0 60px rgba(0,0,0,0.6);
+}
+.overlay-card h2 { font-family: 'Orbitron', sans-serif; font-size: 18px; letter-spacing: 2px; color: var(--cyan); margin-bottom: 6px; }
+.overlay-card .hint { font-size: 12px; color: var(--dim); line-height: 1.6; margin-bottom: 16px; letter-spacing: .5px; }
+.name-input {
+  width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(120,140,255,0.45);
+  background: rgba(6,9,24,0.9); color: var(--text); font-family: 'Russo One', sans-serif; font-size: 15px; letter-spacing: 1px;
+  outline: none; margin-bottom: 12px; text-align: center;
+}
+.name-input:focus { border-color: var(--cyan); box-shadow: 0 0 14px rgba(77,225,255,0.25); }
+.overlay-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+.btn {
+  font-family: 'Russo One', sans-serif; font-size: 13px; letter-spacing: 1px; color: var(--text);
+  background: linear-gradient(135deg, rgba(77,225,255,0.18), rgba(177,75,255,0.22));
+  border: 1px solid rgba(120,140,255,0.45); border-radius: 10px; padding: 8px 16px;
+  cursor: pointer; transition: transform .12s ease, box-shadow .2s ease; user-select: none;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 0 18px rgba(77,225,255,0.45); }
+.auth-msg { min-height: 18px; font-size: 12px; letter-spacing: .5px; margin-top: 10px; }
+.auth-msg.ok { color: #57ff8f; }
+.auth-msg.err { color: #ff7a6b; }
+.auth-code-show {
+  margin: 12px 0; padding: 10px; border: 1px dashed rgba(77,225,255,0.5); border-radius: 12px;
+  font-family: 'Orbitron', sans-serif; font-size: 26px; letter-spacing: 8px; color: var(--cyan);
+  background: rgba(6,9,24,0.8);
+}
+
 .section-title {
   font-family: 'Orbitron', sans-serif;
   font-size: 18px; letter-spacing: 3px;
@@ -233,36 +282,6 @@ footer {
       </div>
     </a>
 
-    <a class="card playable" href="games/space-arcade/">
-      <span class="badge">ИГРАТЬ</span>
-      <div class="preview neon">🛸</div>
-      <div class="info">
-        <div class="name">КОСМИЧЕСКАЯ АРКАДА</div>
-        <div class="desc">3D-перестрелка на трёхмерной Земле: отбивай волны Армады, прокачивай уровни.</div>
-        <span class="play-btn">▶ ИГРАТЬ</span>
-      </div>
-    </a>
-
-    <a class="card playable" href="games/karate/">
-      <span class="badge">ИГРАТЬ</span>
-      <div class="preview neon">🥋</div>
-      <div class="info">
-        <div class="name">КАРАТЕ ЧЕМПИОНАТ</div>
-        <div class="desc">2D файтинг: выбери бойца, победи 10 противников, зарабатывай золотые кубки. Супер-удары!</div>
-        <span class="play-btn">▶ ИГРАТЬ</span>
-      </div>
-    </a>
-
-    <a class="card playable" href="games/shooter/">
-      <span class="badge">ИГРАТЬ</span>
-      <div class="preview neon">💥</div>
-      <div class="info">
-        <div class="name">АСТРО-ШУТЕР</div>
-        <div class="desc">Отбивай волны вражеских кораблей, собирай бонусы и побеждай боссов каждые 5 волн.</div>
-        <span class="play-btn">▶ ИГРАТЬ</span>
-      </div>
-    </a>
-
     <a class="card playable" href="games/2048/">
       <span class="badge">ИГРАТЬ</span>
       <div class="preview neon">🔢</div>
@@ -273,12 +292,12 @@ footer {
       </div>
     </a>
 
-    <a class="card playable" href="games/minesweeper/">
+    <a class="card playable" href="games/memory/">
       <span class="badge">ИГРАТЬ</span>
-      <div class="preview neon">💣</div>
+      <div class="preview neon">🃏</div>
       <div class="info">
-        <div class="name">САПЁР НА ПЛАНЕТАХ</div>
-        <div class="desc">Обезвредь мины на трёх уровнях сложности, ставь флажки и бей рекорды по времени.</div>
+        <div class="name">ГАЛАКТИЧЕСКАЯ ПАМЯТЬ</div>
+        <div class="desc">Найди все пары планет и кораблей на трёх уровнях сложности, тренируй память.</div>
         <span class="play-btn">▶ ИГРАТЬ</span>
       </div>
     </a>
@@ -293,16 +312,48 @@ footer {
       </div>
     </a>
 
-    <a class="card playable" href="games/memory/">
-      <span class="badge">ИГРАТЬ</span>
-      <div class="preview neon">🃏</div>
+    <a class="card locked" href="games/shooter/" data-game="shooter">
+      <span class="badge">🔒 ЗА 5 СЕК</span>
+      <div class="preview">💥</div>
       <div class="info">
-        <div class="name">ГАЛАКТИЧЕСКАЯ ПАМЯТЬ</div>
-        <div class="desc">Найди все пары планет и кораблей на трёх уровнях сложности, тренируй память.</div>
-        <span class="play-btn">▶ ИГРАТЬ</span>
+        <div class="name">АСТРО-ШУТЕР</div>
+        <div class="desc">Отбивай волны вражеских кораблей, собирай бонусы и побеждай боссов каждые 5 волн.</div>
+        <span class="play-btn">🔒 ИГРАТЬ</span>
+      </div>
+    </a>
+
+    <a class="card locked" href="games/space-arcade/" data-game="space-arcade">
+      <span class="badge">🔒 ЗА 5 СЕК</span>
+      <div class="preview">🛸</div>
+      <div class="info">
+        <div class="name">КОСМИЧЕСКАЯ АРКАДА</div>
+        <div class="desc">3D-перестрелка на трёхмерной Земле: отбивай волны Армады, прокачивай уровни.</div>
+        <span class="play-btn">🔒 ИГРАТЬ</span>
+      </div>
+    </a>
+
+    <a class="card locked" href="games/karate/" data-game="karate">
+      <span class="badge">🔒 ЗА 5 СЕК</span>
+      <div class="preview">🥋</div>
+      <div class="info">
+        <div class="name">КАРАТЕ ЧЕМПИОНАТ</div>
+        <div class="desc">2D файтинг: выбери бойца, победи 10 противников, зарабатывай золотые кубки. Супер-удары!</div>
+        <span class="play-btn">🔒 ИГРАТЬ</span>
+      </div>
+    </a>
+
+    <a class="card locked" href="games/minesweeper/" data-game="minesweeper">
+      <span class="badge">🔒 ЗА 5 СЕК</span>
+      <div class="preview">💣</div>
+      <div class="info">
+        <div class="name">САПЁР НА ПЛАНЕТАХ</div>
+        <div class="desc">Обезвредь мины на трёх уровнях сложности, ставь флажки и бей рекорды по времени.</div>
+        <span class="play-btn">🔒 ИГРАТЬ</span>
       </div>
     </a>
   </div>
+
+  <div class="locked-note">Авторизуйся по нику и почте — и открой эти игры бесплатно</div>
 
   <div class="ad-slot infeed">
     <span class="ad-label">РЕКЛАМА</span>
@@ -323,6 +374,25 @@ footer {
   </div>
 
   <footer>© Галактика Игр · Коллекция браузерных игр</footer>
+</div>
+
+<div class="overlay hidden" id="authOverlay">
+  <div class="overlay-card">
+    <h2>🔓 ВХОД ДЛЯ ИГР</h2>
+    <p class="hint">Введи ник и почту — придёт 4-значный код. Открой все игры бесплатно.</p>
+    <input class="name-input" id="authNick" maxlength="20" placeholder="Твой ник">
+    <input class="name-input" id="authEmail" type="email" placeholder="Email для кода">
+    <div class="overlay-actions">
+      <button class="btn" id="authSend">📨 Получить код</button>
+    </div>
+    <div class="auth-code-show hidden" id="authCodeShow"></div>
+    <input class="name-input hidden" id="authCode" maxlength="4" inputmode="numeric" placeholder="4-значный код">
+    <div class="overlay-actions">
+      <button class="btn hidden" id="authVerify">✅ Войти</button>
+      <button class="btn" id="authClose">Закрыть</button>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
 </div>
 
 <script src="assets/profile.js"></script>
@@ -361,6 +431,87 @@ footer {
   window.addEventListener('resize', resize);
   resize();
   requestAnimationFrame(draw);
+})();
+
+(() => {
+  const $ = id => document.getElementById(id);
+  let pendingGame = null;
+
+  const overlay = $('authOverlay');
+  const nick = $('authNick'), email = $('authEmail');
+  const codeShow = $('authCodeShow'), code = $('authCode');
+  const btnSend = $('authSend'), btnVerify = $('authVerify'), btnClose = $('authClose');
+  const msg = $('authMsg');
+
+  function setMsg(text, ok) {
+    msg.textContent = text || '';
+    msg.className = 'auth-msg' + (ok ? ' ok' : text ? ' err' : '');
+  }
+  function applyAuthState() {
+    const authorized = window.Galaxy && Galaxy.isAuthorized();
+    document.querySelectorAll('.card.locked').forEach(card => {
+      card.classList.toggle('locked', !authorized);
+    });
+    $('galaxyNameVal') && (() => {
+      const badge = document.getElementById('galaxyNameVal');
+      if (badge) badge.textContent = window.Galaxy ? Galaxy.getPlayerLabel().label : 'Гость';
+    })();
+  }
+  function openAuth() {
+    overlay.classList.remove('hidden');
+    codeShow.classList.add('hidden');
+    code.classList.add('hidden');
+    btnVerify.classList.add('hidden');
+    btnSend.classList.remove('hidden');
+    setMsg('');
+    nick.value = window.Galaxy ? Galaxy.getNickname() : '';
+    if (window.Galaxy && Galaxy.getAuth() && !Galaxy.getAuth().verified) {
+      setMsg('Код уже отправлен на ' + Galaxy.getAuth().email + ' — введи его ниже', true);
+      codeShow.textContent = Galaxy.getAuth().email ? '' : '';
+    }
+  }
+
+  document.querySelectorAll('.card.locked').forEach(card => {
+    card.addEventListener('click', e => {
+      if (window.Galaxy && Galaxy.isAuthorized()) return;
+      e.preventDefault();
+      pendingGame = card.getAttribute('href');
+      openAuth();
+    });
+  });
+
+  btnSend.addEventListener('click', () => {
+    const res = window.Galaxy ? Galaxy.register({ nickname: nick.value, email: email.value }) : null;
+    if (!res || !res.ok) { setMsg((res && res.error) || 'Ошибка входа', false); return; }
+    codeShow.classList.remove('hidden');
+    code.classList.remove('hidden');
+    btnVerify.classList.remove('hidden');
+    btnSend.classList.add('hidden');
+    if (!res.sent) {
+      codeShow.textContent = res.code;
+      setMsg('Почта не подключена — код показан на экране. Сохрани его!', false);
+    } else {
+      codeShow.textContent = '';
+      setMsg('Код отправлен на ' + email.value.trim(), true);
+    }
+    code.value = '';
+    code.focus();
+  });
+
+  btnVerify.addEventListener('click', () => {
+    const res = window.Galaxy ? Galaxy.verifyCode(code.value) : null;
+    if (!res || !res.ok) { setMsg((res && res.error) || 'Ошибка входа', false); return; }
+    overlay.classList.add('hidden');
+    setMsg('');
+    applyAuthState();
+    if (pendingGame) { const go = pendingGame; pendingGame = null; location.href = go; }
+  });
+  code.addEventListener('keydown', e => { if (e.key === 'Enter') btnVerify.click(); });
+  email.addEventListener('keydown', e => { if (e.key === 'Enter') btnSend.click(); });
+  btnClose.addEventListener('click', () => overlay.classList.add('hidden'));
+
+  if (window.Galaxy) Galaxy.onUpdate(() => applyAuthState());
+  applyAuthState();
 })();
 </script>
 </body>

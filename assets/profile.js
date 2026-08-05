@@ -1,5 +1,8 @@
 (() => {
-  const KEY = 'galaxy_profile';
+  const PROFILE_KEY = 'galaxy_profile';
+  const AUTH_KEY = 'galaxy_auth';
+  const SESSIONS_KEY = 'galaxy_sessions';
+  const GUEST_SEQ_KEY = 'galaxy_guest_seq';
   const RATE = 10000;
   const WIN_BONUS = { tetris: 15, 'space-arcade': 20, karate: 20, snake: 10, 2048: 10, minesweeper: 15, memory: 10, shooter: 20 };
   const GAME_NAMES = {
@@ -8,12 +11,29 @@
     memory: 'Галактическая память', shooter: 'Астро-шутер'
   };
 
+  const CONFIG = {
+    EMAILJS: {
+      enabled: false,
+      serviceId: '',
+      templateId: '',
+      publicKey: ''
+    },
+    SYNC_ENDPOINT: ''
+  };
+
   let profile = null;
+  let auth = null;
+  let guestId = 0;
   let session = { gameId: null, startedAt: 0, lastTick: 0 };
+  let sessionResult = null;
   let listeners = [];
+  let updateListeners = [];
+
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
   function load() {
-    try { profile = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { profile = null; }
+    try { profile = JSON.parse(lsGet(PROFILE_KEY) || 'null'); } catch (e) { profile = null; }
     if (!profile || typeof profile !== 'object') {
       profile = { nickname: 'Гость', coins: 0, coinsFromTime: 0, coinsFromWins: 0, createdAt: Date.now(), stats: {}, statuses: [] };
       save();
@@ -22,8 +42,10 @@
     if (!profile.statuses) profile.statuses = [];
     if (profile.coinsFromTime === undefined) profile.coinsFromTime = 0;
     if (profile.coinsFromWins === undefined) profile.coinsFromWins = 0;
+    try { auth = JSON.parse(lsGet(AUTH_KEY) || 'null'); } catch (e) { auth = null; }
+    try { guestId = parseInt(lsGet(GUEST_SEQ_KEY) || '0', 10) || 0; } catch (e) { guestId = 0; }
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(profile)); } catch (e) {} }
+  function save() { lsSet(PROFILE_KEY, JSON.stringify(profile)); }
 
   function gameIdFromUrl() {
     const parts = location.pathname.split('/').filter(Boolean);
@@ -40,7 +62,19 @@
   function totalTime() { return Object.values(profile.stats).reduce((s, x) => s + (x.timeMs || 0), 0); }
   function totalWins() { return Object.values(profile.stats).reduce((s, x) => s + (x.wins || 0), 0); }
 
-  function emit() { listeners.forEach(fn => { try { fn(profile.coins); } catch (e) {} }); }
+  function displayName() { return (profile && profile.nickname) || 'Гость'; }
+  function getGuestNumber() {
+    if (auth && auth.verified) return null;
+    if (!guestId) { guestId = 1; lsSet(GUEST_SEQ_KEY, String(guestId)); }
+    return guestId;
+  }
+  function playerLabel() {
+    if (auth && auth.verified) return { type: 'registered', label: auth.nickname, email: auth.email };
+    return { type: 'guest', label: 'Гость ' + getGuestNumber(), email: '' };
+  }
+
+  function emitCoins() { listeners.forEach(fn => { try { fn(profile.coins); } catch (e) {} }); }
+  function emitUpdate() { updateListeners.forEach(fn => { try { fn(); } catch (e) {} }); }
 
   function flushTime() {
     if (!session.gameId) return;
@@ -53,7 +87,7 @@
     if (st) {
       st.timeMs += addMs;
       const addCoins = Math.floor(addMs / RATE);
-      if (addCoins > 0) { profile.coins += addCoins; profile.coinsFromTime += addCoins; emit(); }
+      if (addCoins > 0) { profile.coins += addCoins; profile.coinsFromTime += addCoins; emitCoins(); }
     }
     save();
   }
@@ -85,7 +119,7 @@
         added = true;
       }
     }
-    if (added) { save(); emit(); }
+    if (added) { save(); emitCoins(); }
   }
 
   function formatTime(ms) {
@@ -97,12 +131,98 @@
     return h + ' ч ' + (m % 60) + ' мин';
   }
 
+  function sync(kind, payload) {
+    if (!CONFIG.SYNC_ENDPOINT) return;
+    try {
+      fetch(CONFIG.SYNC_ENDPOINT + '/' + kind, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ts: Date.now(), guestId, player: playerLabel(), payload })
+      }).catch(() => {});
+    } catch (e) {}
+  }
+
+  function sendEmailCode(email, nickname, code) {
+    if (CONFIG.EMAILJS.enabled && window.emailjs) {
+      try {
+        emailjs.send(CONFIG.EMAILJS.serviceId, CONFIG.EMAILJS.templateId, {
+          to_email: email, to_name: nickname, code: String(code)
+        }, { publicKey: CONFIG.EMAILJS.publicKey });
+        return true;
+      } catch (e) {}
+    }
+    return false;
+  }
+
+  function logSession() {
+    if (!session.gameId) return;
+    const now = Date.now();
+    const durationMs = now - session.startedAt;
+    flushTime();
+    const rec = {
+      guestId: getGuestNumber() || 0,
+      type: playerLabel().type,
+      nickname: playerLabel().label,
+      email: playerLabel().email,
+      ts: now,
+      date: new Date(now).toLocaleDateString('ru-RU'),
+      time: new Date(now).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      game: session.gameId,
+      gameName: GAME_NAMES[session.gameId] || session.gameId,
+      durationMs,
+      result: sessionResult || 'не завершено'
+    };
+    let list = [];
+    try { list = JSON.parse(lsGet(SESSIONS_KEY) || '[]'); } catch (e) {}
+    list.push(rec);
+    if (list.length > 2000) list = list.slice(-2000);
+    lsSet(SESSIONS_KEY, JSON.stringify(list));
+    sessionResult = null;
+    sync('session', rec);
+  }
+
   const Galaxy = {
     init(gameId) {
       load();
       session = { gameId, startedAt: Date.now(), lastTick: Date.now() };
       save();
     },
+    getDisplayName() { load(); return displayName(); },
+    setNickname(n) {
+      load();
+      profile.nickname = (n || '').trim().slice(0, 20) || 'Гость';
+      save();
+      emitUpdate();
+      sync('nick', { nickname: profile.nickname });
+    },
+    register({ nickname, email }) {
+      load();
+      const nick = (nickname || '').trim().slice(0, 20);
+      const mail = (email || '').trim().toLowerCase();
+      if (!nick || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return { ok: false, error: 'Введи ник и корректную почту' };
+      const code = Math.floor(1000 + Math.random() * 9000);
+      auth = { verified: false, email: mail, nickname: nick, code: String(code), registeredAt: Date.now() };
+      lsSet(AUTH_KEY, JSON.stringify(auth));
+      const sent = sendEmailCode(mail, nick, code);
+      sync('register', { email: mail, nickname: nick, sent });
+      return { ok: true, sent, code: String(code) };
+    },
+    verifyCode(input) {
+      load();
+      if (!auth) return { ok: false, error: 'Сначала запроси код' };
+      if (auth.verified) return { ok: true };
+      if (String(input).trim() !== auth.code) return { ok: false, error: 'Неверный код' };
+      auth.verified = true;
+      auth.registeredAt = auth.registeredAt || Date.now();
+      lsSet(AUTH_KEY, JSON.stringify(auth));
+      profile.nickname = auth.nickname;
+      save();
+      emitUpdate();
+      sync('verify', { email: auth.email, nickname: auth.nickname });
+      return { ok: true };
+    },
+    getAuth() { load(); return auth ? { verified: auth.verified, email: auth.email, nickname: auth.nickname, registeredAt: auth.registeredAt } : null; },
+    isAuthorized() { load(); return !!(auth && auth.verified); },
     reportPlay(gameId) {
       load();
       const st = getStats(gameId || session.gameId);
@@ -120,33 +240,36 @@
       profile.coinsFromWins += bonus;
       checkStatuses();
       save();
-      emit();
+      emitCoins();
+      sync('win', { game: g });
     },
+    setResult(label) { sessionResult = label; },
     getCoins() { load(); return profile.coins; },
     getNickname() { load(); return profile.nickname; },
-    setNickname(n) {
-      load();
-      profile.nickname = (n || '').trim().slice(0, 20) || 'Гость';
-      save();
-      emit();
-    },
     getProfile() { load(); return profile; },
     getStats(gameId) { load(); return getStats(gameId); },
     getRank() { load(); return rank(); },
     getStatuses() { load(); return profile.statuses; },
     getTotalTime() { load(); return totalTime(); },
     getTotalWins() { load(); return totalWins(); },
+    getSessions() {
+      load();
+      try { return JSON.parse(lsGet(SESSIONS_KEY) || '[]'); } catch (e) { return []; }
+    },
+    getPlayerLabel() { load(); return playerLabel(); },
     onCoins(fn) { listeners.push(fn); },
+    onUpdate(fn) { updateListeners.push(fn); },
     formatTime,
-    GAME_NAMES
+    GAME_NAMES,
+    CONFIG
   };
   window.Galaxy = Galaxy;
 
-  function gameId() { return gameIdFromUrl(); }
-  const autoGame = gameId();
+  const autoGame = gameIdFromUrl();
   if (autoGame) Galaxy.init(autoGame);
 
-  window.addEventListener('beforeunload', () => { flushTime(); });
+  window.addEventListener('beforeunload', () => { logSession(); });
+  window.addEventListener('pagehide', () => { logSession(); });
   setInterval(() => { flushTime(); }, 5000);
 
   function injectBadge() {
@@ -155,23 +278,26 @@
     const a = document.createElement('a');
     a.id = 'galaxyCoinsBadge';
     a.href = depth + 'profile.html';
-    a.title = 'Личный кабинет: монеты и награды';
+    a.title = 'Личный кабинет';
     a.style.cssText =
       'position:fixed;top:10px;right:10px;z-index:9999;' +
-      'font-family:"Russo One",Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;' +
+      'display:flex;align-items:center;gap:7px;' +
+      'font-family:"Russo One",Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;' +
       'color:#ffd500;text-decoration:none;white-space:nowrap;' +
       'background:linear-gradient(135deg,rgba(255,213,0,0.16),rgba(255,94,203,0.18));' +
       'border:1px solid rgba(255,213,0,0.55);border-radius:12px;padding:7px 14px;' +
       'box-shadow:0 4px 18px rgba(0,0,0,0.4);user-select:none;' +
       'transition:transform .12s ease, box-shadow .2s ease;';
-    a.innerHTML = '🪙 <span id="galaxyCoinsVal">0</span>';
+    a.innerHTML = '<span id="galaxyNameVal">' + playerLabel().label + '</span><span style="opacity:.55">·</span><span>🪙 <span id="galaxyCoinsVal">0</span></span>';
     a.addEventListener('mouseenter', () => { a.style.transform = 'translateY(-2px)'; });
     a.addEventListener('mouseleave', () => { a.style.transform = ''; });
     document.body.appendChild(a);
-    const val = document.getElementById('galaxyCoinsVal');
-    const setVal = c => { if (val) val.textContent = c; };
-    setVal(profile.coins);
-    Galaxy.onCoins(setVal);
+    const nameEl = document.getElementById('galaxyNameVal');
+    const coinEl = document.getElementById('galaxyCoinsVal');
+    const render = () => { if (nameEl) nameEl.textContent = playerLabel().label; if (coinEl) coinEl.textContent = profile.coins; };
+    render();
+    Galaxy.onCoins(() => render());
+    Galaxy.onUpdate(() => render());
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectBadge);
   else injectBadge();

@@ -315,7 +315,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
       stopTimer();
       $('smiley').textContent = '😎';
       sfxWin();
-      if (window.Galaxy) Galaxy.reportWin('minesweeper');
+      if (window.Galaxy) { Galaxy.setResult('победа за ' + timer + ' с'); Galaxy.reportWin('minesweeper'); }
       const t = timer;
       if (!best[lvl] || t < best[lvl]) { best[lvl] = t; try { localStorage.setItem(storeKey, JSON.stringify(best)); } catch (e) {} }
       updateBestView();

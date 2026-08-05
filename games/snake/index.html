@@ -300,7 +300,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     saveScore('Аноним');
     renderRecords('gameOverRecords');
     $('gameOverOverlay').classList.remove('hidden');
-    if (window.Galaxy) Galaxy.reportWin('snake');
+    if (window.Galaxy) { Galaxy.setResult('очков: ' + score); Galaxy.reportWin('snake'); }
   }
 
   function togglePause() {

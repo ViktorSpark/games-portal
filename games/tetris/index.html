@@ -1047,7 +1047,7 @@ footer { margin-top: 18px; font-size: 12px; color: var(--dim); letter-spacing: 1
     state = 'gameover';
     sfxGameOver();
     showGameOver();
-    if (window.Galaxy) Galaxy.reportWin('tetris');
+    if (window.Galaxy) { Galaxy.setResult('очков: ' + score); Galaxy.reportWin('tetris'); }
   }
 
   function addLineBurst(rows, n) {

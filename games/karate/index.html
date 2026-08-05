@@ -635,7 +635,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     saveHonor();
     stopMusic();
     gameState = 'matchEnd';
-    if (window.Galaxy) Galaxy.reportWin('karate');
+    if (window.Galaxy) { Galaxy.setResult(playerWon ? 'победа в бою' : 'поражение в бою'); Galaxy.reportWin('karate'); }
     showResult(playerWon);
   }
 

@@ -1139,7 +1139,7 @@
       sfxLevelUp(); flashScreen(200); lastSpawn=Date.now();
     }
     
-    function endGame(){gameActive=false;gameOver=true;isPaused=false;pauseMenu.classList.remove('visible');showMessage('GAME OVER',0);[enemies,lasers,rockets_list,enemyLasers,enemyShips,armadaShips,asteroids,coins_list,medkits].forEach(a=>{a.forEach(o=>scene.remove(o.mesh||o));a.length=0;});armadaWaveActive=false;armadaTriggeredForLevel.clear();finalSceneActive=false;finalVictory=false;stopFireworks();stopAllMusic();if(window.Galaxy)Galaxy.reportWin('space-arcade');setTimeout(()=>{nameScreen.classList.remove('hidden');updateUI();},2000);}
+    function endGame(){gameActive=false;gameOver=true;isPaused=false;pauseMenu.classList.remove('visible');showMessage('GAME OVER',0);[enemies,lasers,rockets_list,enemyLasers,enemyShips,armadaShips,asteroids,coins_list,medkits].forEach(a=>{a.forEach(o=>scene.remove(o.mesh||o));a.length=0;});armadaWaveActive=false;armadaTriggeredForLevel.clear();finalSceneActive=false;finalVictory=false;stopFireworks();stopAllMusic();if(window.Galaxy){Galaxy.setResult('очков: '+score+', уровень '+level);Galaxy.reportWin('space-arcade');}setTimeout(()=>{nameScreen.classList.remove('hidden');updateUI();},2000);}
     
     function applyDevAndStart(){
       DEV.tracks=[document.getElementById('dev-track1').value,document.getElementById('dev-track2').value,document.getElementById('dev-track3').value];
