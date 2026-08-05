@@ -61,6 +61,15 @@ h1 {
 
 .tagline { color: var(--dim); margin-top: 8px; font-size: 15px; letter-spacing: 1px; }
 
+.profile-link {
+  font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 2px;
+  color: var(--gold); text-decoration: none; padding: 9px 18px; border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255,213,0,0.14), rgba(255,94,203,0.16));
+  border: 1px solid rgba(255,213,0,0.5);
+  transition: transform .12s ease, box-shadow .2s ease;
+}
+.profile-link:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(255,213,0,0.4); }
+
 .ad-slot {
   position: relative;
   border: 1px dashed rgba(255, 213, 0, 0.35);
@@ -202,6 +211,7 @@ footer {
   <header>
     <h1>ГАЛАКТИКА ИГР</h1>
     <div class="tagline">Бесплатные браузерные игры · Играй онлайн прямо сейчас</div>
+    <a href="profile.html" style="display:inline-block;margin-top:14px" class="profile-link">👤 ЛИЧНЫЙ КАБИНЕТ</a>
   </header>
 
   <div class="ad-slot top">
@@ -315,6 +325,7 @@ footer {
   <footer>© Галактика Игр · Коллекция браузерных игр</footer>
 </div>
 
+<script src="assets/profile.js"></script>
 <script>
 (() => {
   const cv = document.getElementById('starfield');

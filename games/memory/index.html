@@ -214,6 +214,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   </div>
 </div>
 
+<script src="../../assets/profile.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -299,6 +300,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   }
   function win() {
     sfxWin();
+    if (window.Galaxy) Galaxy.reportWin('memory');
     $('winMoves').textContent = moves + ' ход' + (moves % 10 === 1 && moves % 100 !== 11 ? '' : 'ов');
     if (!best[lvl] || moves < best[lvl]) {
       best[lvl] = moves;
@@ -356,7 +358,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
       newBoard();
     });
   });
-  $('btnStart').addEventListener('click', () => { sfxClick(); $('startOverlay').classList.add('hidden'); newBoard(); });
+  $('btnStart').addEventListener('click', () => { sfxClick(); $('startOverlay').classList.add('hidden'); newBoard(); if (window.Galaxy) Galaxy.reportPlay('memory'); });
   $('btnWinAgain').addEventListener('click', () => { sfxClick(); $('winOverlay').classList.add('hidden'); newBoard(); });
   $('btnWinStart').addEventListener('click', () => {
     sfxClick(); $('winOverlay').classList.add('hidden');

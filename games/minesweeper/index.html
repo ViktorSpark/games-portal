@@ -220,6 +220,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   </div>
 </div>
 
+<script src="../../assets/profile.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -256,6 +257,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     $('minesLeft').textContent = mines;
     $('smiley').textContent = '😀';
     renderBoard();
+    if (window.Galaxy) Galaxy.reportPlay('minesweeper');
   }
   function placeMines(safeR, safeC) {
     let placed = 0;
@@ -313,6 +315,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
       stopTimer();
       $('smiley').textContent = '😎';
       sfxWin();
+      if (window.Galaxy) Galaxy.reportWin('minesweeper');
       const t = timer;
       if (!best[lvl] || t < best[lvl]) { best[lvl] = t; try { localStorage.setItem(storeKey, JSON.stringify(best)); } catch (e) {} }
       updateBestView();

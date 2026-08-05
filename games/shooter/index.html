@@ -124,6 +124,8 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     <div class="stat-line"><span>ОЧКИ</span><b id="score">0</b></div>
     <div class="stat-line"><span>РЕКОРД</span><b class="gold" id="best">0</b></div>
     <div class="stat-line"><span>ВОЛНА</span><b id="wave">1</b></div>
+    <div class="stat-line"><span>ОРУЖИЕ</span><b id="weapon">1</b></div>
+    <div class="stat-line"><span>КОМБО</span><b class="gold" id="combo">x1</b></div>
     <div class="hearts" id="hearts"></div>
   </div>
 
@@ -146,7 +148,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     <button class="btn" data-key="pause">⏸</button>
   </div>
 
-  <footer>ОТБИВАЙ ВОЛНЫ · ПРОКАЧИВАЙ ОРУЖИЕ · ПОБЕЖДАЙ БОССОВ</footer>
+  <footer>НЕПРЕРЫВНЫЙ ЗАЛП · КОМБО ДО x3 · ПОБЕЖДАЙ БОССОВ</footer>
 
   <div class="ad-slot bottom">
     <span class="ad-label">РЕКЛАМА</span>
@@ -157,12 +159,13 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
 <div class="overlay" id="startOverlay">
   <div class="overlay-card">
     <h2>👾 АСТРО-ШУТЕР</h2>
-    <p>Защити галактику: отбивай волны вражеских кораблей, собирай бонусы и побеждай боссов.</p>
+    <p>Защити галактику: удерживай <b>ПРОБЕЛ</b> — штурмовик ведёт непрерывный залповый огонь и сметает целые ряды врагов.</p>
     <div class="controls-note">
       <b>◀ ▶ ▲ ▼</b> — движение (или WASD)<br>
-      <b>Пробел</b> — огонь (держи для авто)<br>
+      <b>Пробел (удержание)</b> — залповый обстрел<br>
       <b>P</b> — пауза<br>
-      <b>Бонусы</b> — ⬆ оружие, 🛡 защита, ❤ жизнь
+      <b>Бонусы</b> — ⬆ оружие, 🛡 защита, ❤ жизнь<br>
+      <b>Комбо</b> — серия убийств умножает очки до x3
     </div>
     <div class="records" id="startRecords"></div>
     <div class="overlay-actions">
@@ -201,17 +204,19 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     <h2>ПОМОЩЬ</h2>
     <div class="controls-note">
       <b>◀ ▶ ▲ ▼</b> или <b>WASD</b> — движение<br>
-      <b>Пробел</b> — огонь<br>
+      <b>Пробел (удержание)</b> — непрерывный залп, сносит ряды врагов<br>
       <b>P</b> — пауза · <b>H</b> — помощь<br>
-      <b>Бонусы</b> — ⬆ прокачка оружия, 🛡 щит, ❤ жизнь
+      <b>Бонусы</b> — ⬆ прокачка оружия до 5 ур., 🛡 щит, ❤ жизнь<br>
+      <b>Комбо</b> — убивай без пауз: множитель очков растёт до x3
     </div>
-    <p>Каждые 5 волн — <b>БОСС</b>. Уничтожь его, чтобы продолжить путь!</p>
+    <p>Каждые 5 волн — <b>БОСС</b>. Игра бесконечная: волны становятся всё злее, продержись как можно дольше!</p>
     <div class="overlay-actions">
       <button class="btn primary" id="btnHelpClose">ПОНЯТНО</button>
     </div>
   </div>
 </div>
 
+<script src="../../assets/profile.js"></script>
 <script>
 (() => {
   const cv = document.getElementById('game');
@@ -232,7 +237,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   try { records = JSON.parse(localStorage.getItem('shooter_records') || '[]'); } catch (e) {}
 
   function resetPlayer() {
-    player = { x: W/2, y: H-70, w: 26, h: 30, lives: 3, weapon: 1, shield: 0, fireRate: 240, fireCd: 0 };
+    player = { x: W/2, y: H-70, w: 26, h: 30, lives: 3, weapon: 1, shield: 0, fireRate: 105, fireCd: 0, combo: 0, comboT: 0 };
   }
 
   function newGame() {
@@ -241,6 +246,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     score = 0; wave = 0; spawnT = 0; waveState = 'spawning';
     invulnT = 120; fireT = 0; shakeT = 0;
     gameState = 'play';
+    if (window.Galaxy) Galaxy.reportPlay('shooter');
     nextWave();
     updateHud();
     renderHearts();
@@ -268,9 +274,9 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     const rows = Math.min(3, 1 + Math.floor(wave/2));
     for (let i = 0; i < n; i++) {
       const type = Math.random() < 0.25 ? 'fast' : Math.random() < 0.5 ? 'tank' : 'basic';
-      const cfg = { basic:{hp:2, w:34, h:26, vy:1.2, score:100, shoot:0.008},
-                    fast:{hp:1, w:26, h:20, vy:2.2, score:70, shoot:0.003},
-                    tank:{hp:6, w:40, h:32, vy:0.7, score:200, shoot:0.012} }[type];
+      const cfg = { basic:{hp:2, w:34, h:26, vy:1.2, score:100, shoot:0.006},
+                    fast:{hp:1, w:26, h:20, vy:2.2, score:70, shoot:0.0025},
+                    tank:{hp:6, w:40, h:32, vy:0.7, score:200, shoot:0.01} }[type];
       enemies.push({
         x: 30 + Math.random()*(W-60),
         y: -20 - Math.random()*140 - i*8,
@@ -280,16 +286,22 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     }
   }
   function firePlayer() {
-    const bx = player.x;
-    if (player.weapon >= 3) {
-      bullets.push({ x: bx, y: player.y, vx: -2, vy: -9, w: 4, dmg: 1 });
-      bullets.push({ x: bx, y: player.y, vx: 2, vy: -9, w: 4, dmg: 1 });
-      bullets.push({ x: bx, y: player.y, vx: 0, vy: -10, w: 5, dmg: 2 });
-    } else if (player.weapon === 2) {
-      bullets.push({ x: bx-8, y: player.y, vx: -1.4, vy: -9.5, w: 4, dmg: 1 });
-      bullets.push({ x: bx+8, y: player.y, vx: 1.4, vy: -9.5, w: 4, dmg: 1 });
+    const bx = player.x, by = player.y;
+    const lvl = player.weapon;
+    if (lvl >= 5) {
+      for (let i = -2; i <= 2; i++) bullets.push({ x: bx, y: by, vx: i * 1.1, vy: -10 - Math.abs(i) * 0.5, w: 4, dmg: 2 });
+      bullets.push({ x: bx, y: by, vx: 0, vy: -12, w: 5, dmg: 3 });
+    } else if (lvl === 4) {
+      for (let i = -2; i <= 2; i++) bullets.push({ x: bx, y: by, vx: i * 0.9, vy: -10, w: 4, dmg: 2 });
+    } else if (lvl === 3) {
+      bullets.push({ x: bx - 9, y: by, vx: 0, vy: -10.5, w: 4, dmg: 1 });
+      bullets.push({ x: bx, y: by, vx: 0, vy: -11, w: 5, dmg: 2 });
+      bullets.push({ x: bx + 9, y: by, vx: 0, vy: -10.5, w: 4, dmg: 1 });
+    } else if (lvl === 2) {
+      bullets.push({ x: bx - 8, y: by, vx: 0, vy: -10.5, w: 4, dmg: 1 });
+      bullets.push({ x: bx + 8, y: by, vx: 0, vy: -10.5, w: 4, dmg: 1 });
     } else {
-      bullets.push({ x: bx, y: player.y, vx: 0, vy: -10, w: 4, dmg: 1 });
+      bullets.push({ x: bx, y: by, vx: 0, vy: -11, w: 4, dmg: 1 });
     }
     sfxShot();
   }
@@ -327,6 +339,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
       player.fireCd = player.fireRate;
     }
     if (invulnT > 0) invulnT -= dt;
+    if (player.comboT > 0) { player.comboT -= dt; if (player.comboT <= 0 && player.combo > 0) { player.combo = 0; updateHud(); } }
 
     // spawning
     spawnT += dt;
@@ -424,16 +437,20 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) $('banner').classList.add('hidden'); }
   }
 
+  function comboMult() { return 1 + Math.min(player.combo, 25) * 0.08; }
   function killEnemy(i) {
     const e = enemies[i];
     enemies.splice(i, 1);
-    score += e.score;
+    player.combo++; player.comboT = 200;
+    const pts = Math.round(e.score * comboMult());
+    score += pts;
     updateHud();
     addExplosion(e.x, e.y, e.type === 'boss' ? '#ffd500' : '#ff5ecb', e.type === 'boss' ? 50 : 18);
     shakeT = Math.max(shakeT, e.type === 'boss' ? 30 : 8);
     sfxBoom(e.type === 'boss');
-    addFloat(e.x, e.y-10, '+' + e.score, '#ffd500');
-    if (Math.random() < 0.14) {
+    addFloat(e.x, e.y-10, '+' + pts, '#ffd500');
+    if (player.combo % 10 === 0) addFloat(player.x, player.y-28, '🔥 КОМБО x' + comboMult().toFixed(1), '#ffd500');
+    if (Math.random() < 0.16) {
       const types = ['weapon', 'shield', 'heart'];
       const t = types[Math.floor(Math.random()*types.length)];
       powerups.push({ x: e.x, y: e.y, type: t, phase: 0, color: {weapon:'#57ff8f', shield:'#4de1ff', heart:'#ff5ecb'}[t] });
@@ -441,9 +458,9 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   }
   function applyPowerup(t) {
     if (t === 'weapon') {
-      player.weapon = Math.min(3, player.weapon + 1);
-      player.fireRate = Math.max(150, player.fireRate - 30);
-      addFloat(player.x, player.y-20, '⬆ ОРУЖИЕ!', '#57ff8f');
+      player.weapon = Math.min(5, player.weapon + 1);
+      player.fireRate = Math.max(60, 120 - player.weapon * 12);
+      addFloat(player.x, player.y-20, '⬆ ОРУЖИЕ ' + player.weapon + '!', '#57ff8f');
       sfxPower();
     } else if (t === 'shield') {
       player.shield = Math.min(2, player.shield + 1);
@@ -484,6 +501,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     saveScore();
     renderRecords('gameOverRecords');
     $('gameOverOverlay').classList.remove('hidden');
+    if (window.Galaxy) Galaxy.reportWin('shooter');
   }
   function saveScore() {
     records.push({ name: 'Аноним', score, wave, d: Date.now() });
@@ -499,6 +517,8 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   function updateHud() {
     $('score').textContent = score;
     $('wave').textContent = wave;
+    $('weapon').textContent = player.weapon;
+    $('combo').textContent = 'x' + comboMult().toFixed(1);
     if (score > best) { best = score; try { localStorage.setItem(storeKey, String(best)); } catch (e) {} }
     $('best').textContent = best;
   }
@@ -729,7 +749,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   requestAnimationFrame(drawStars);
 
   window.__shooter = {
-    newGame, togglePause, update,
+    newGame, togglePause, update, firePlayer, comboMult, applyPowerup,
     get gameState() { return gameState; },
     get bullets() { return bullets; },
     get player() { return player; },

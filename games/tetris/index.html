@@ -778,6 +778,7 @@ footer { margin-top: 18px; font-size: 12px; color: var(--dim); letter-spacing: 1
   </div>
 </div>
 
+<script src="../../assets/profile.js"></script>
 <script>
 (() => {
   'use strict';
@@ -1046,6 +1047,7 @@ footer { margin-top: 18px; font-size: 12px; color: var(--dim); letter-spacing: 1
     state = 'gameover';
     sfxGameOver();
     showGameOver();
+    if (window.Galaxy) Galaxy.reportWin('tetris');
   }
 
   function addLineBurst(rows, n) {
@@ -1455,6 +1457,7 @@ footer { margin-top: 18px; font-size: 12px; color: var(--dim); letter-spacing: 1
     $('startOverlay').classList.add('hidden');
     updatePlayerCard();
     resetGame();
+    if (window.Galaxy) Galaxy.reportPlay('tetris');
     sfxClick();
   }
 

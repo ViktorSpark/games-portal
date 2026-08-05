@@ -460,6 +460,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
   </div>
 </div>
 
+<script src="../../assets/profile.js"></script>
 <script>
 (() => {
   'use strict';
@@ -579,6 +580,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     gameState = 'fight';
     startRound(1);
     initAudio();
+    if (window.Galaxy) Galaxy.reportPlay('karate');
     startMusic(currentOpp.arena);
   }
 
@@ -633,6 +635,7 @@ footer { font-size: 12px; color: var(--dim); opacity: .7; letter-spacing: 1px; }
     saveHonor();
     stopMusic();
     gameState = 'matchEnd';
+    if (window.Galaxy) Galaxy.reportWin('karate');
     showResult(playerWon);
   }
 
