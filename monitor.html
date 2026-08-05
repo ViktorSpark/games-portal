@@ -167,39 +167,60 @@ h1 {
     if (m < 60) return m + ' мин';
     return Math.floor(m / 60) + ' ч ' + (m % 60) + ' мин';
   };
-  const short = s => s ? String(s).slice(0, 3) : '—';
   const names = (window.Galaxy && Galaxy.GAME_NAMES) || {};
+  const isWin = r => /побед|победа|выигр|заработал|очков/.test(r || '') && !/пораж/.test(r || '');
 
-  function playerKey(rec) {
-    if (rec.type === 'registered') return 'reg:' + rec.email;
-    return 'guest:' + (rec.guestId || 0);
-  }
+  const sbHeaders = () => {
+    const c = Galaxy.CONFIG.SUPABASE;
+    return { apikey: c.anonKey, Authorization: 'Bearer ' + c.anonKey, 'Content-Type': 'application/json' };
+  };
 
-  function render() {
-    if (!window.Galaxy) return;
-    const sessions = Galaxy.getSessions();
+  function groupSessions(sessions, playerMeta) {
     const players = new Map();
     for (const rec of sessions) {
-      const k = playerKey(rec);
-      if (!players.has(k)) {
-        players.set(k, {
-          key: k, label: rec.nickname || 'Гость ' + rec.guestId, email: rec.email || '',
+      const mail = rec.player_email || rec.email || '';
+      const isReg = mail !== '';
+      const key = isReg
+        ? 'reg:' + mail
+        : 'guest:' + (rec.device_id || rec.deviceId || 'local') + ':' + (rec.guest_id || rec.guestId || rec.nickname || '');
+      if (!players.has(key)) {
+        players.set(key, {
+          key, label: rec.nickname || 'Гость', email: mail,
+          deviceId: rec.device_id || rec.deviceId || '', isReg,
           registeredAt: rec.ts, firstSeen: rec.ts, timeMs: 0, sessions: [], wins: 0
         });
       }
-      const p = players.get(k);
+      const p = players.get(key);
       p.sessions.push(rec);
-      p.timeMs += rec.durationMs || 0;
-      if (rec.ts < p.firstSeen) p.firstSeen = rec.ts;
-      if (/побед|победа|выигр|заработал/.test(rec.result || '') && !/пораж/.test(rec.result || '')) p.wins++;
-      if (rec.type === 'registered' && rec.ts < p.registeredAt) p.registeredAt = rec.ts;
+      p.timeMs += rec.duration_ms || rec.durationMs || 0;
+      if (rec.ts && rec.ts < p.firstSeen) p.firstSeen = rec.ts;
+      if (isWin(rec.result)) p.wins++;
     }
-    const list = Array.from(players.values())
-      .sort((a, b) => b.firstSeen - a.firstSeen);
+    // merge multi-device registered players by email
+    const byEmail = new Map();
+    const final = [];
+    for (const p of players.values()) {
+      if (p.isReg) {
+        if (!byEmail.has(p.email)) { byEmail.set(p.email, Object.assign({}, p, { sessions: [] })); }
+        const m = byEmail.get(p.email);
+        m.sessions = m.sessions.concat(p.sessions);
+        m.timeMs += p.timeMs;
+        m.wins += p.wins;
+        if (p.firstSeen < m.firstSeen) m.firstSeen = p.firstSeen;
+        if (!m.registeredAt || p.registeredAt < m.registeredAt) m.registeredAt = p.registeredAt;
+      } else {
+        final.push(p);
+      }
+    }
+    for (const m of byEmail.values()) final.push(m);
+    final.forEach(p => p.sessions.sort((a, b) => (new Date(b.ts || b.tsRaw || 0)) - (new Date(a.ts || a.tsRaw || 0))));
+    return final;
+  }
 
+  function renderPlayers(list, sessionsTotal) {
     $('statPlayers').textContent = list.length;
-    $('statSessions').textContent = sessions.length;
-    $('statTime').textContent = fmt(sessions.reduce((s, r) => s + (r.durationMs || 0), 0));
+    $('statSessions').textContent = sessionsTotal;
+    $('statTime').textContent = fmt(list.reduce((s, p) => s + p.timeMs, 0));
     $('statWins').textContent = list.reduce((s, p) => s + p.wins, 0);
 
     const tbody = $('playersBody');
@@ -207,25 +228,25 @@ h1 {
       tbody.innerHTML = '<tr><td colspan="7" class="empty">Пока нет данных. Заходи на игры — сессии начнут записываться.</td></tr>';
       return;
     }
-    tbody.innerHTML = list.map((p, i) => {
-      const isReg = p.email !== '';
-      const regDate = new Date(isReg ? p.registeredAt : p.firstSeen).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const sorted = list.slice().sort((a, b) => b.firstSeen - a.firstSeen);
+    tbody.innerHTML = sorted.map((p, i) => {
+      const regDate = new Date(p.registeredAt || p.firstSeen).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
       return '<tr class="clickable" data-key="' + p.key + '">' +
         '<td>' + (i + 1) + '</td>' +
-        '<td class="' + (isReg ? 'player' : 'guest') + '">' + p.label + '</td>' +
+        '<td class="' + (p.isReg ? 'player' : 'guest') + '">' + p.label + '</td>' +
         '<td>' + (p.email || '—') + '</td>' +
         '<td class="r">' + regDate + '</td>' +
         '<td class="r">' + fmt(p.timeMs) + '</td>' +
         '<td class="r">' + p.sessions.length + '</td>' +
         '<td class="r">' + p.wins + '</td>' +
         '</tr>';
-    }).join('') + list.map(p =>
+    }).join('') + sorted.map(p =>
       '<tr class="detail-row hidden" data-detail="' + p.key + '"><td colspan="7"><div class="inner">' +
       '<table class="table"><thead><tr><th>Дата</th><th>Время</th><th>Игра</th><th class="r">Длительность</th><th>Результат</th></tr></thead><tbody>' +
-      p.sessions.slice().reverse().map(s =>
-        '<tr><td>' + s.date + '</td><td>' + s.time + '</td><td>' + (names[s.game] || s.game) + '</td>' +
-        '<td class="r">' + fmt(s.durationMs || 0) + '</td>' +
-        '<td><span class="chip ' + (/побед|победа|выигр|заработал/.test(s.result || '') && !/пораж/.test(s.result || '') ? 'win' : '') + '">' + (s.result || 'не завершено') + '</span></td></tr>'
+      p.sessions.map(s =>
+        '<tr><td>' + (s.date || '') + '</td><td>' + (s.time || '') + '</td><td>' + (names[s.game] || s.game) + '</td>' +
+        '<td class="r">' + fmt(s.duration_ms || s.durationMs || 0) + '</td>' +
+        '<td><span class="chip ' + (isWin(s.result) ? 'win' : '') + '">' + (s.result || 'не завершено') + '</span></td></tr>'
       ).join('') +
       '</tbody></table></div></td></tr>'
     ).join('');
@@ -237,11 +258,62 @@ h1 {
         if (detail) detail.classList.toggle('hidden');
       });
     });
+  }
 
-    const synced = (window.Galaxy && Galaxy.CONFIG && Galaxy.CONFIG.SYNC_ENDPOINT) ? true : false;
+  async function loadServer() {
+    if (!window.Galaxy || !Galaxy.isSyncEnabled()) return null;
+    const base = (Galaxy.CONFIG.SUPABASE.url || '').replace(/\/+$/, '');
+    try {
+      const [d, s] = await Promise.all([
+        fetch(base + '/rest/v1/rpc/monitor_data', { method: 'POST', headers: sbHeaders(), body: '{}' }),
+        fetch(base + '/rest/v1/rpc/monitor_sessions', { method: 'POST', headers: sbHeaders(), body: '{}' })
+      ]);
+      if (!d.ok || !s.ok) return null;
+      const data = await d.json();
+      const sessions = await s.json();
+      return { data, sessions };
+    } catch (e) { return null; }
+  }
+
+  async function render() {
+    if (!window.Galaxy) return;
+    const server = await loadServer();
+    if (server) {
+      const meta = new Map();
+      (server.data || []).forEach(r => {
+        const isReg = r.player_email && r.player_email !== '';
+        const key = isReg ? 'reg:' + r.player_email : 'guest:' + r.device_id + ':' + r.nickname;
+        if (!meta.has(key)) {
+          meta.set(key, { registeredAt: r.registered_at, verified: r.verified, email: r.player_email, deviceId: r.device_id, nickname: r.nickname });
+        } else {
+          const m = meta.get(key);
+          if (r.registered_at && r.registered_at < m.registeredAt) m.registeredAt = r.registered_at;
+          if (r.verified) m.verified = true;
+        }
+      });
+      const serverSessions = (server.sessions || []).map(s => Object.assign({}, s, { tsRaw: new Date(s.ts).getTime() }));
+      const list = groupSessions(serverSessions, meta);
+      list.forEach(p => {
+        const m = p.isReg ? meta.get('reg:' + p.email) : meta.get(p.key);
+        if (m) {
+          p.registeredAt = m.registeredAt || p.registeredAt;
+          p.verified = m.verified;
+        }
+        p.firstSeen = p.sessions.length ? new Date(p.sessions[p.sessions.length - 1].ts).getTime() : p.firstSeen;
+      });
+      renderPlayers(list, serverSessions.length);
+      $('dataNote').innerHTML = '☁️ Синк-сервер подключён: данные всех посетителей со всех устройств. ' +
+        (serverSessions.length >= 5000 ? 'Показаны последние 5000 сессий.' : '');
+      return;
+    }
+    // fallback: local browser data
+    const sessions = Galaxy.getSessions().map(s => Object.assign({}, s, { tsRaw: s.ts }));
+    const list = groupSessions(sessions, new Map());
+    renderPlayers(list, sessions.length);
+    const synced = Galaxy.isSyncEnabled();
     $('dataNote').innerHTML = synced
-      ? 'Сессии собираются со всех устройств через синк-сервер.'
-      : 'Сейчас данные хранятся в браузере (localStorage) — здесь видны сессии этого устройства. Чтобы видеть всех посетителей со всех устройств, подключи синк-сервер в assets/profile.js (SYNC_ENDPOINT) или EmailJS/Netlify-функцию для отправки кодов.';
+      ? 'Синк-сервер не отвечает — показаны локальные данные этого устройства.'
+      : 'Синк-сервер не подключён — показаны данные этого устройства. Подключи Supabase в assets/profile.js (CONFIG.SUPABASE: url + anonKey), чтобы видеть всех посетителей.';
   }
 
   render();

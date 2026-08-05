@@ -18,7 +18,11 @@
       templateId: '',
       publicKey: ''
     },
-    SYNC_ENDPOINT: ''
+    SYNC_ENDPOINT: '',
+    SUPABASE: {
+      url: '',
+      anonKey: ''
+    }
   };
 
   let profile = null;
@@ -142,6 +146,63 @@
     } catch (e) {}
   }
 
+  let deviceId = null;
+  function computeDeviceId() {
+    if (deviceId) return deviceId;
+    let d = lsGet('galaxy_device_id');
+    if (!d) {
+      d = 'dev-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      lsSet('galaxy_device_id', d);
+    }
+    deviceId = d;
+    return d;
+  }
+  function sbConfigured() {
+    return !!(CONFIG.SUPABASE.url && CONFIG.SUPABASE.anonKey);
+  }
+  function sbFetch(path, init) {
+    const base = (CONFIG.SUPABASE.url || '').replace(/\/+$/, '');
+    if (!base || !CONFIG.SUPABASE.anonKey) return Promise.reject(new Error('supabase not configured'));
+    const headers = Object.assign({
+      apikey: CONFIG.SUPABASE.anonKey,
+      Authorization: 'Bearer ' + CONFIG.SUPABASE.anonKey,
+      'Content-Type': 'application/json'
+    }, (init && init.headers) || {});
+    return fetch(base + path, Object.assign({}, init, { headers }));
+  }
+  function sbSync(kind, payload) {
+    if (!sbConfigured()) return Promise.resolve(false);
+    try {
+      if (kind === 'session') {
+        return sbFetch('/rest/v1/sessions', {
+          method: 'POST',
+          body: JSON.stringify(Object.assign({ device_id: computeDeviceId() }, payload))
+        }).then(r => r.ok).catch(() => false);
+      }
+      if (kind === 'register') {
+        return sbFetch('/rest/v1/players?on_conflict=email', {
+          method: 'POST',
+          headers: { Prefer: 'resolution=ignore-duplicates' },
+          body: JSON.stringify(Object.assign({ device_id: computeDeviceId(), verified: false }, payload))
+        }).then(r => r.ok).catch(() => false);
+      }
+      if (kind === 'verify') {
+        return sbFetch('/rest/v1/players?email=eq.' + encodeURIComponent(payload.email), {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ verified: true })
+        }).then(r => r.ok).catch(() => false);
+      }
+    } catch (e) {}
+    return Promise.resolve(false);
+  }
+  function sbSendCode(email, nickname, code) {
+    return sbFetch('/functions/v1/send-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, nickname, code: String(code) })
+    }).then(r => r.ok).then(ok => ({ ok, error: ok ? '' : 'no email provider' })).catch(() => ({ ok: false, error: 'function unavailable' }));
+  }
+
   function sendEmailCode(email, nickname, code) {
     if (CONFIG.EMAILJS.enabled && window.emailjs) {
       try {
@@ -179,6 +240,19 @@
     lsSet(SESSIONS_KEY, JSON.stringify(list));
     sessionResult = null;
     sync('session', rec);
+    sbSync('session', {
+      player_email: rec.email || null,
+      guest_id: rec.guestId || null,
+      player_type: rec.type,
+      nickname: rec.nickname,
+      ts: new Date(rec.ts).toISOString(),
+      date: rec.date,
+      time: rec.time,
+      game: rec.game,
+      game_name: rec.gameName,
+      duration_ms: rec.durationMs,
+      result: rec.result
+    });
   }
 
   const Galaxy = {
@@ -195,7 +269,7 @@
       emitUpdate();
       sync('nick', { nickname: profile.nickname });
     },
-    register({ nickname, email }) {
+    async register({ nickname, email }) {
       load();
       const nick = (nickname || '').trim().slice(0, 20);
       const mail = (email || '').trim().toLowerCase();
@@ -203,7 +277,17 @@
       const code = Math.floor(1000 + Math.random() * 9000);
       auth = { verified: false, email: mail, nickname: nick, code: String(code), registeredAt: Date.now() };
       lsSet(AUTH_KEY, JSON.stringify(auth));
-      const sent = sendEmailCode(mail, nick, code);
+      let sent = sendEmailCode(mail, nick, code);
+      if (sbConfigured()) {
+        sbSync('register', {
+          email: mail,
+          nickname: nick,
+          code: String(code),
+          code_expires_at: new Date(Date.now() + 10 * 60000).toISOString()
+        });
+        const res = await sbSendCode(mail, nick, code);
+        if (res.ok) sent = true;
+      }
       sync('register', { email: mail, nickname: nick, sent });
       return { ok: true, sent, code: String(code) };
     },
@@ -219,6 +303,7 @@
       save();
       emitUpdate();
       sync('verify', { email: auth.email, nickname: auth.nickname });
+      sbSync('verify', { email: auth.email });
       return { ok: true };
     },
     getAuth() { load(); return auth ? { verified: auth.verified, email: auth.email, nickname: auth.nickname, registeredAt: auth.registeredAt } : null; },
@@ -256,6 +341,8 @@
       load();
       try { return JSON.parse(lsGet(SESSIONS_KEY) || '[]'); } catch (e) { return []; }
     },
+    getDeviceId() { return computeDeviceId(); },
+    isSyncEnabled() { load(); return sbConfigured(); },
     getPlayerLabel() { load(); return playerLabel(); },
     onCoins(fn) { listeners.push(fn); },
     onUpdate(fn) { updateListeners.push(fn); },

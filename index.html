@@ -480,8 +480,8 @@ footer {
     });
   });
 
-  btnSend.addEventListener('click', () => {
-    const res = window.Galaxy ? Galaxy.register({ nickname: nick.value, email: email.value }) : null;
+  btnSend.addEventListener('click', async () => {
+    const res = window.Galaxy ? await Galaxy.register({ nickname: nick.value, email: email.value }) : null;
     if (!res || !res.ok) { setMsg((res && res.error) || 'Ошибка входа', false); return; }
     codeShow.classList.remove('hidden');
     code.classList.remove('hidden');
