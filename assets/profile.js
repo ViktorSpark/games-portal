@@ -20,8 +20,8 @@
     },
     SYNC_ENDPOINT: '',
     SUPABASE: {
-      url: '',
-      anonKey: ''
+      url: 'https://qaxciurksxccvwwfjcaq.supabase.co',
+      anonKey: 'sb_publishable_Z_QOSA1nFeF5xBPGXiNMJg_I5zqkPix'
     }
   };
 
