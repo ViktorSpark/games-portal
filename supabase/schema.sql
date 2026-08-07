@@ -43,11 +43,11 @@ alter table public.players enable row level security;
 alter table public.sessions enable row level security;
 
 -- Аноним может только: вставить игрока и сессию.
--- Читать данные аноним НЕ может. Подтверждение кода — через
--- security definer функцию verify_player() ниже.
+-- Читать данные аноним НЕ может (RLS без select-политики всё равно
+-- отдаёт 0 строк). SELECT грант нужен PostgREST для on_conflict upsert.
 revoke all on public.players from anon;
 revoke all on public.sessions from anon;
-grant insert on public.players to anon;
+grant select, insert on public.players to anon;
 grant insert on public.sessions to anon;
 
 drop policy if exists players_anon_insert on public.players;
