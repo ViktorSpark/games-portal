@@ -180,10 +180,15 @@
         }).then(r => r.ok).catch(() => false);
       }
       if (kind === 'register') {
-        return sbFetch('/rest/v1/players?on_conflict=email', {
+        return sbFetch('/rest/v1/rpc/store_player', {
           method: 'POST',
-          headers: { Prefer: 'resolution=ignore-duplicates' },
-          body: JSON.stringify(Object.assign({ device_id: computeDeviceId(), verified: false }, payload))
+          body: JSON.stringify({
+            p_email: payload.email,
+            p_nickname: payload.nickname,
+            p_code: payload.code,
+            p_code_expires_at: payload.code_expires_at,
+            p_device_id: computeDeviceId()
+          })
         }).then(r => r.ok).catch(() => false);
       }
       if (kind === 'verify') {

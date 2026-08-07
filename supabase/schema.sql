@@ -43,11 +43,11 @@ alter table public.players enable row level security;
 alter table public.sessions enable row level security;
 
 -- Аноним может только: вставить игрока и сессию.
--- Читать данные аноним НЕ может (RLS без select-политики всё равно
--- отдаёт 0 строк). SELECT грант нужен PostgREST для on_conflict upsert.
+-- Читать данные аноним НЕ может (RLS без select-политики). Регистрация
+-- и верификация — через security definer функции store_player()/verify_player().
 revoke all on public.players from anon;
 revoke all on public.sessions from anon;
-grant select, insert on public.players to anon;
+grant insert on public.players to anon;
 grant insert on public.sessions to anon;
 
 drop policy if exists players_anon_insert on public.players;
@@ -89,6 +89,38 @@ end;
 $$;
 
 grant execute on function public.verify_player(text, text) to anon;
+
+-- ---------- Регистрация / повторная регистрация ----------
+-- Вставляет игрока или обновляет код при повторном входе с той же почтой.
+create or replace function public.store_player(
+  p_email text,
+  p_nickname text,
+  p_code text,
+  p_code_expires_at timestamptz,
+  p_device_id text
+)
+returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.players (email, nickname, code, code_expires_at, verified, device_id)
+  values (
+    lower(btrim(p_email)),
+    btrim(p_nickname),
+    p_code,
+    p_code_expires_at,
+    false,
+    coalesce(p_device_id, '')
+  )
+  on conflict (email) do update
+    set code = excluded.code,
+        code_expires_at = excluded.code_expires_at,
+        nickname = excluded.nickname,
+        device_id = excluded.device_id;
+  return true;
+end;
+$$;
+
+grant execute on function public.store_player(text, text, text, timestamptz, text) to anon;
 
 -- ---------- Чтение для страницы мониторинга ----------
 -- Функции запускаются от владельца (postgres), RLS обходится,
