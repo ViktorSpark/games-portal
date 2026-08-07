@@ -187,10 +187,9 @@
         }).then(r => r.ok).catch(() => false);
       }
       if (kind === 'verify') {
-        return sbFetch('/rest/v1/players?email=eq.' + encodeURIComponent(payload.email), {
-          method: 'PATCH',
-          headers: { Prefer: 'return=minimal' },
-          body: JSON.stringify({ verified: true })
+        return sbFetch('/rest/v1/rpc/verify_player', {
+          method: 'POST',
+          body: JSON.stringify({ p_email: payload.email, p_code: payload.code || '' })
         }).then(r => r.ok).catch(() => false);
       }
     } catch (e) {}
@@ -303,7 +302,7 @@
       save();
       emitUpdate();
       sync('verify', { email: auth.email, nickname: auth.nickname });
-      sbSync('verify', { email: auth.email });
+      sbSync('verify', { email: auth.email, code: auth.code });
       return { ok: true };
     },
     getAuth() { load(); return auth ? { verified: auth.verified, email: auth.email, nickname: auth.nickname, registeredAt: auth.registeredAt } : null; },

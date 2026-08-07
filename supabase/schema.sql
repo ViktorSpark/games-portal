@@ -42,25 +42,53 @@ create index if not exists sessions_guest_idx on public.sessions (device_id);
 alter table public.players enable row level security;
 alter table public.sessions enable row level security;
 
--- Аноним может только: вставить игрока, вставить сессию,
--- пометить verified=true. Читать данные аноним НЕ может.
+-- Аноним может только: вставить игрока и сессию.
+-- Читать данные аноним НЕ может. Подтверждение кода — через
+-- security definer функцию verify_player() ниже.
 revoke all on public.players from anon;
 revoke all on public.sessions from anon;
-grant insert, update (verified) on public.players to anon;
+grant insert on public.players to anon;
 grant insert on public.sessions to anon;
 
+drop policy if exists players_anon_insert on public.players;
 create policy players_anon_insert on public.players
   for insert to anon
   with check (email is not null and nickname is not null);
 
-create policy players_anon_verify on public.players
-  for update to anon
-  using (true)
-  with check (new.verified = true);
+drop policy if exists players_anon_verify on public.players;
 
+drop policy if exists sessions_anon_insert on public.sessions;
 create policy sessions_anon_insert on public.sessions
   for insert to anon
   with check (true);
+
+-- ---------- Верификация кода ----------
+-- Проверяет код из таблицы игроков и помечает verified=true.
+-- Выполняется от владельца (postgres), поэтому RLS не мешает,
+-- но без верного кода ничего не поменяется.
+create or replace function public.verify_player(p_email text, p_code text)
+returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  v_verified boolean;
+begin
+  select verified into v_verified
+  from public.players
+  where email = lower(btrim(p_email))
+  limit 1;
+  if v_verified is true then
+    return true;
+  end if;
+  update public.players
+     set verified = true, code = null
+   where email = lower(btrim(p_email))
+     and code = btrim(p_code)
+     and (code_expires_at is null or code_expires_at > now());
+  return found;
+end;
+$$;
+
+grant execute on function public.verify_player(text, text) to anon;
 
 -- ---------- Чтение для страницы мониторинга ----------
 -- Функции запускаются от владельца (postgres), RLS обходится,
